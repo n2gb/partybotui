@@ -760,23 +760,95 @@ function PartyBotUI_OnSlotEnter(button)
         PartyBotUI_ShowItemTooltip(GameTooltip, button, button.itemLink)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("|cffff8000Right-Click to unequip to bot bags|r", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("|cff00ff00Drag item here to replace / equip|r", 0.7, 0.7, 0.7)
         GameTooltip:Show()
     else
         local slotName = PB_SLOT_NAMES[button.slotId] or "Slot"
         GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
         GameTooltip:SetText(slotName .. " (Empty)", 1, 1, 1)
+        GameTooltip:AddLine("|cff00ff00Drag item here to equip|r", 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end
 end
 
-function PartyBotUI_OnSlotClick(button, mouseBtn)
-    if mouseBtn == "RightButton" and button.itemLink then
-        local currentBot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
-        if currentBot then
-            TargetUnit(currentBot.unit)
-            PartyBotUI_Command("unequip " .. button.itemLink)
-            DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to unequip %s...", currentBot.name, button.itemLink))
+-- Cursor tracking for drag-and-drop equipping
+PartyBotUI_CursorItem = nil
+
+local pb_orig_PickupContainerItem = PickupContainerItem
+PickupContainerItem = function(bag, slot)
+    local link = GetContainerItemLink(bag, slot)
+    if CursorHasItem() then
+        PartyBotUI_CursorItem = nil
+    else
+        if link then
+            PartyBotUI_CursorItem = {
+                type = "container",
+                bag = bag,
+                slot = slot,
+                link = link
+            }
+        else
+            PartyBotUI_CursorItem = nil
         end
+    end
+    return pb_orig_PickupContainerItem(bag, slot)
+end
+
+local pb_orig_PickupInventoryItem = PickupInventoryItem
+PickupInventoryItem = function(slot)
+    local link = GetInventoryItemLink("player", slot)
+    if CursorHasItem() then
+        PartyBotUI_CursorItem = nil
+    else
+        if link then
+            PartyBotUI_CursorItem = {
+                type = "inventory",
+                slot = slot,
+                link = link
+            }
+        else
+            PartyBotUI_CursorItem = nil
+        end
+    end
+    return pb_orig_PickupInventoryItem(slot)
+end
+
+local pb_orig_ClearCursor = ClearCursor
+ClearCursor = function()
+    PartyBotUI_CursorItem = nil
+    return pb_orig_ClearCursor()
+end
+
+function PartyBotUI_OnSlotClick(button, mouseBtn)
+    local currentBot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+    if not currentBot then return end
+
+    -- Check if player is holding an item on cursor to equip onto bot
+    if CursorHasItem() and PartyBotUI_CursorItem and PartyBotUI_CursorItem.link then
+        local itemLink = PartyBotUI_CursorItem.link
+        local slotId = button.slotId
+
+        -- Safely restore cursor item to bag to prevent destroy prompts
+        if PartyBotUI_CursorItem.type == "container" then
+            pb_orig_PickupContainerItem(PartyBotUI_CursorItem.bag, PartyBotUI_CursorItem.slot)
+        elseif PartyBotUI_CursorItem.type == "inventory" then
+            pb_orig_PickupInventoryItem(PartyBotUI_CursorItem.slot)
+        else
+            pb_orig_ClearCursor()
+        end
+        PartyBotUI_CursorItem = nil
+
+        TargetUnit(currentBot.unit)
+        PartyBotUI_Command(string.format("equip %s %d %s", currentBot.name, slotId, itemLink))
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s in slot %d...", currentBot.name, itemLink, slotId))
+        PlaySound("ITEM_ARMOR_EQUIP")
+        return
+    end
+
+    if mouseBtn == "RightButton" and button.itemLink then
+        TargetUnit(currentBot.unit)
+        PartyBotUI_Command("unequip " .. button.itemLink)
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to unequip %s...", currentBot.name, button.itemLink))
     end
 end
 
@@ -868,7 +940,7 @@ function PartyBotUI_RenderBags()
         -- Capacity / Summary Footer
         frame.summaryText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         frame.summaryText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 25, 18)
-        frame.summaryText:SetText("Click an item to retrieve it into your bags (.partybot giveback).")
+        frame.summaryText:SetText("Left-Click: Retrieve item to your bags. Right-Click: Equip item on bot.")
     end
 
     -- Update sub tabs
@@ -1033,7 +1105,8 @@ function PartyBotUI_OnBagSlotEnter(button)
         GameTooltip:AddLine(" ")
         local bagDesc = button.bagName or "Backpack"
         GameTooltip:AddLine(string.format("|cff888888%s, Slot %d|r", bagDesc, (button.slotIndex or 0) + 1))
-        GameTooltip:AddLine("|cff00ff00Click to retrieve this item into your bags|r", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("|cff00ff00Left-Click: Retrieve into your bags|r", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("|cffffd200Right-Click: Equip on this bot|r", 0.8, 0.8, 0.8)
         GameTooltip:Show()
     else
         local bagDesc = button.bagName or "Backpack"
@@ -1044,13 +1117,18 @@ function PartyBotUI_OnBagSlotEnter(button)
 end
 
 function PartyBotUI_OnBagSlotClick(button, mouseBtn)
-    if button.itemLink then
-        local currentBot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
-        if currentBot then
-            TargetUnit(currentBot.unit)
-            PartyBotUI_Command("giveback " .. button.itemLink)
-            DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting %s from %s...", button.itemLink, currentBot.name))
-        end
+    if not button.itemLink then return end
+    local currentBot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+    if not currentBot then return end
+
+    if mouseBtn == "RightButton" then
+        TargetUnit(currentBot.unit)
+        PartyBotUI_Command(string.format("equip %s %s", currentBot.name, button.itemLink))
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s...", currentBot.name, button.itemLink))
+    else
+        TargetUnit(currentBot.unit)
+        PartyBotUI_Command("giveback " .. button.itemLink)
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting %s from %s...", button.itemLink, currentBot.name))
     end
 end
 
@@ -1218,21 +1296,23 @@ end
 -- Hook Bag Tooltips
 local pb_orig_SetBagItem = GameTooltip.SetBagItem
 GameTooltip.SetBagItem = function(self, bag, slot)
-    pb_orig_SetBagItem(self, bag, slot)
+    local val = pb_orig_SetBagItem(self, bag, slot)
     local link = GetContainerItemLink(bag, slot)
     if link then
-        PartyBotUI_AppendUpgradeTooltip(self, link)
+        pcall(PartyBotUI_AppendUpgradeTooltip, self, link)
     end
+    return val
 end
 
 -- Hook Inventory Tooltips
 local pb_orig_SetInventoryItem = GameTooltip.SetInventoryItem
 GameTooltip.SetInventoryItem = function(self, unit, slot)
-    pb_orig_SetInventoryItem(self, unit, slot)
+    local val = pb_orig_SetInventoryItem(self, unit, slot)
     local link = GetInventoryItemLink(unit, slot)
     if link then
-        PartyBotUI_AppendUpgradeTooltip(self, link)
+        pcall(PartyBotUI_AppendUpgradeTooltip, self, link)
     end
+    return val
 end
 
 -- ============================================================================

@@ -35,6 +35,9 @@
         </Layers>
         <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
         <Scripts>
+            <OnLoad>
+                this:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+            </OnLoad>
             <OnEnter>
                 PartyBotUI_OnSlotEnter(this);
             </OnEnter>
@@ -44,6 +47,9 @@
             <OnClick>
                 PartyBotUI_OnSlotClick(this, arg1);
             </OnClick>
+            <OnReceiveDrag>
+                PartyBotUI_OnSlotClick(this, "LeftButton");
+            </OnReceiveDrag>
         </Scripts>
     </Button>
 
@@ -83,6 +89,9 @@
         </Layers>
         <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
         <Scripts>
+            <OnLoad>
+                this:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+            </OnLoad>
             <OnEnter>
                 PartyBotUI_OnBagSlotEnter(this);
             </OnEnter>
