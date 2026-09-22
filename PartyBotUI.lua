@@ -838,9 +838,10 @@ function PartyBotUI_OnSlotClick(button, mouseBtn)
         end
         PartyBotUI_CursorItem = nil
 
+        local slotName = PB_SLOT_NAMES[slotId] or ("slot " .. slotId)
         TargetUnit(currentBot.unit)
         PartyBotUI_Command(string.format("equip %s %d %s", currentBot.name, slotId, itemLink))
-        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s in slot %d...", currentBot.name, itemLink, slotId))
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s in %s slot...", currentBot.name, itemLink, slotName))
         PlaySound("ITEM_ARMOR_EQUIP")
         return
     end
