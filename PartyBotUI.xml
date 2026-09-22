@@ -1,0 +1,554 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+    <!-- Template for Paperdoll Equipment Slot Button -->
+    <Button name="PartyBotSlotTemplate" virtual="true">
+        <Size>
+            <AbsDimension x="37" y="37"/>
+        </Size>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture name="$parentBackground" setAllPoints="true">
+                    <Color r="0.1" g="0.1" b="0.1" a="0.6"/>
+                </Texture>
+            </Layer>
+            <Layer level="BORDER">
+                <Texture name="$parentIcon" setAllPoints="true"/>
+            </Layer>
+            <Layer level="OVERLAY">
+                <Texture name="$parentBorder" file="Interface\Buttons\UI-ActionButton-Border" alphaMode="ADD" hidden="true">
+                    <Size>
+                        <AbsDimension x="60" y="60"/>
+                    </Size>
+                    <Anchors>
+                        <Anchor point="CENTER"/>
+                    </Anchors>
+                </Texture>
+                <FontString name="$parentCount" inherits="NumberFontNormal" justifyH="RIGHT" hidden="true">
+                    <Anchors>
+                        <Anchor point="BOTTOMRIGHT">
+                            <Offset>
+                                <AbsDimension x="-2" y="2"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
+        <Scripts>
+            <OnEnter>
+                PartyBotUI_OnSlotEnter(this);
+            </OnEnter>
+            <OnLeave>
+                GameTooltip:Hide();
+            </OnLeave>
+            <OnClick>
+                PartyBotUI_OnSlotClick(this, arg1);
+            </OnClick>
+        </Scripts>
+    </Button>
+
+    <!-- Template for Bag Slot Button -->
+    <Button name="PartyBotBagSlotTemplate" virtual="true">
+        <Size>
+            <AbsDimension x="34" y="34"/>
+        </Size>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture name="$parentBackground" setAllPoints="true">
+                    <Color r="0.15" g="0.15" b="0.15" a="0.8"/>
+                </Texture>
+            </Layer>
+            <Layer level="BORDER">
+                <Texture name="$parentIcon" setAllPoints="true"/>
+            </Layer>
+            <Layer level="OVERLAY">
+                <Texture name="$parentBorder" file="Interface\Buttons\UI-ActionButton-Border" alphaMode="ADD" hidden="true">
+                    <Size>
+                        <AbsDimension x="54" y="54"/>
+                    </Size>
+                    <Anchors>
+                        <Anchor point="CENTER"/>
+                    </Anchors>
+                </Texture>
+                <FontString name="$parentCount" inherits="NumberFontNormal" justifyH="RIGHT" hidden="true">
+                    <Anchors>
+                        <Anchor point="BOTTOMRIGHT">
+                            <Offset>
+                                <AbsDimension x="-2" y="2"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
+        <Scripts>
+            <OnEnter>
+                PartyBotUI_OnBagSlotEnter(this);
+            </OnEnter>
+            <OnLeave>
+                GameTooltip:Hide();
+            </OnLeave>
+            <OnClick>
+                PartyBotUI_OnBagSlotClick(this, arg1);
+            </OnClick>
+        </Scripts>
+    </Button>
+
+    <!-- Template for Top Menu Navigation Buttons -->
+    <Button name="PartyBotNavButtonTemplate" virtual="true">
+        <Size>
+            <AbsDimension x="118" y="24"/>
+        </Size>
+        <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
+            <EdgeSize>
+                <AbsValue val="12"/>
+            </EdgeSize>
+            <TileSize>
+                <AbsValue val="12"/>
+            </TileSize>
+            <BackgroundInsets>
+                <AbsInset left="3" right="3" top="3" bottom="3"/>
+            </BackgroundInsets>
+        </Backdrop>
+        <Layers>
+            <Layer level="OVERLAY">
+                <Texture name="$parentActiveIndicator" hidden="true">
+                    <Size>
+                        <AbsDimension x="110" y="2"/>
+                    </Size>
+                    <Anchors>
+                        <Anchor point="BOTTOM">
+                            <Offset>
+                                <AbsDimension x="0" y="3"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                    <Color r="1.0" g="0.82" b="0.0" a="0.9"/>
+                </Texture>
+            </Layer>
+        </Layers>
+        <ButtonText name="$parentText">
+            <Anchors>
+                <Anchor point="CENTER">
+                    <Offset>
+                        <AbsDimension x="0" y="0"/>
+                    </Offset>
+                </Anchor>
+            </Anchors>
+        </ButtonText>
+        <NormalFont inherits="GameFontHighlightSmall"/>
+        <HighlightFont inherits="GameFontNormalSmall"/>
+        <DisabledFont inherits="GameFontDisableSmall"/>
+        <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD">
+            <Anchors>
+                <Anchor point="TOPLEFT">
+                    <Offset>
+                        <AbsDimension x="3" y="-3"/>
+                    </Offset>
+                </Anchor>
+                <Anchor point="BOTTOMRIGHT">
+                    <Offset>
+                        <AbsDimension x="-3" y="3"/>
+                    </Offset>
+                </Anchor>
+            </Anchors>
+        </HighlightTexture>
+    </Button>
+
+    <!-- Compact Floating Tactical Dock -->
+    <Frame name="PartyBotDockFrame" parent="UIParent" movable="true" enableMouse="true" hidden="false">
+        <Size>
+            <AbsDimension x="310" y="44"/>
+        </Size>
+        <Anchors>
+            <Anchor point="TOP" relativeTo="UIParent" relativePoint="TOP">
+                <Offset>
+                    <AbsDimension x="0" y="-20"/>
+                </Offset>
+            </Anchor>
+        </Anchors>
+        <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
+            <EdgeSize>
+                <AbsValue val="14"/>
+            </EdgeSize>
+            <TileSize>
+                <AbsValue val="14"/>
+            </TileSize>
+            <BackgroundInsets>
+                <AbsInset left="3" right="3" top="3" bottom="3"/>
+            </BackgroundInsets>
+        </Backdrop>
+        <Layers>
+            <Layer level="ARTWORK">
+                <FontString name="PartyBotDockCountText" inherits="GameFontNormalSmall" text="Bots: 0/4">
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="8" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Frames>
+            <!-- Pull Button -->
+            <Button name="PartyBotDockPullBtn" inherits="UIPanelButtonTemplate" text="Pull">
+                <Size>
+                    <AbsDimension x="42" y="24"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotDockCountText" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="6" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_Command("pull");
+                    </OnClick>
+                </Scripts>
+            </Button>
+
+            <!-- Attack Button -->
+            <Button name="PartyBotDockAttackBtn" inherits="UIPanelButtonTemplate" text="Atk">
+                <Size>
+                    <AbsDimension x="36" y="24"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotDockPullBtn" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="2" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_Command("attackstart");
+                    </OnClick>
+                </Scripts>
+            </Button>
+
+            <!-- Stop Button -->
+            <Button name="PartyBotDockStopBtn" inherits="UIPanelButtonTemplate" text="Stop">
+                <Size>
+                    <AbsDimension x="38" y="24"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotDockAttackBtn" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="2" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_Command("attackstop");
+                    </OnClick>
+                </Scripts>
+            </Button>
+
+            <!-- Regroup / ComeToMe Button -->
+            <Button name="PartyBotDockComeBtn" inherits="UIPanelButtonTemplate" text="Regrp">
+                <Size>
+                    <AbsDimension x="44" y="24"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotDockStopBtn" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="2" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_Command("cometome");
+                    </OnClick>
+                </Scripts>
+            </Button>
+
+            <!-- AOE Toggle Button -->
+            <Button name="PartyBotDockAOEBtn" inherits="UIPanelButtonTemplate" text="AOE">
+                <Size>
+                    <AbsDimension x="38" y="24"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotDockComeBtn" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="2" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_ToggleAOE();
+                    </OnClick>
+                </Scripts>
+            </Button>
+
+            <!-- Open Main Window Button -->
+            <Button name="PartyBotDockOpenBtn" inherits="UIPanelButtonTemplate" text="PB">
+                <Size>
+                    <AbsDimension x="30" y="24"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotDockAOEBtn" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="4" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_ToggleMain();
+                    </OnClick>
+                </Scripts>
+            </Button>
+        </Frames>
+        <Scripts>
+            <OnLoad>
+                this:RegisterForDrag("LeftButton");
+                this:SetBackdropColor(0, 0, 0, 0.75);
+            </OnLoad>
+            <OnDragStart>
+                this:StartMoving();
+            </OnDragStart>
+            <OnDragStop>
+                this:StopMovingOrSizing();
+            </OnDragStop>
+        </Scripts>
+    </Frame>
+
+    <!-- Main PartyBot Window -->
+    <Frame name="PartyBotMainFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true">
+        <Size>
+            <AbsDimension x="530" y="550"/>
+        </Size>
+        <Anchors>
+            <Anchor point="CENTER"/>
+        </Anchors>
+        <Backdrop bgFile="Interface\DialogFrame\UI-DialogBox-Background" edgeFile="Interface\DialogFrame\UI-DialogBox-Border" tile="true">
+            <EdgeSize>
+                <AbsValue val="32"/>
+            </EdgeSize>
+            <TileSize>
+                <AbsValue val="32"/>
+            </TileSize>
+            <BackgroundInsets>
+                <AbsInset left="11" right="12" top="12" bottom="11"/>
+            </BackgroundInsets>
+        </Backdrop>
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture name="PartyBotMainTitleBorder" file="Interface\DialogFrame\UI-DialogBox-Header">
+                    <Size>
+                        <AbsDimension x="260" y="64"/>
+                    </Size>
+                    <Anchors>
+                        <Anchor point="TOP">
+                            <Offset>
+                                <AbsDimension x="0" y="12"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+                <FontString name="PartyBotMainTitleText" inherits="GameFontNormal" text="PartyBot Manager">
+                    <Anchors>
+                        <Anchor point="TOP" relativeTo="PartyBotMainTitleBorder">
+                            <Offset>
+                                <AbsDimension x="0" y="-14"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Frames>
+            <!-- Close Button -->
+            <Button name="PartyBotCloseBtn" inherits="UIPanelCloseButton">
+                <Anchors>
+                    <Anchor point="TOPRIGHT">
+                        <Offset>
+                            <AbsDimension x="-5" y="-5"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotMainFrame:Hide();
+                    </OnClick>
+                </Scripts>
+            </Button>
+
+            <!-- Top Navigation Menu Buttons (Positioned directly below PartyBot Manager title) -->
+            <Button name="PartyBotMainFrameTab1" inherits="PartyBotNavButtonTemplate" text="Roster" id="1">
+                <Anchors>
+                    <Anchor point="TOPLEFT">
+                        <Offset>
+                            <AbsDimension x="24" y="-36"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_SelectTab(1);
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="PartyBotMainFrameTab2" inherits="PartyBotNavButtonTemplate" text="Character Sheet" id="2">
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab1" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="3" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_SelectTab(2);
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="PartyBotMainFrameTab3" inherits="PartyBotNavButtonTemplate" text="Bot Bags" id="3">
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab2" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="3" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_SelectTab(3);
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="PartyBotMainFrameTab4" inherits="PartyBotNavButtonTemplate" text="Tactics &amp; Roles" id="4">
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab3" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="3" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_SelectTab(4);
+                    </OnClick>
+                </Scripts>
+            </Button>
+
+            <!-- TAB 1: ROSTER & SUMMONING -->
+            <Frame name="PartyBotRosterTabFrame" setAllPoints="true">
+                <!-- Will be populated dynamically by Lua -->
+            </Frame>
+
+            <!-- TAB 2: CHARACTER SHEET / PAPERDOLL -->
+            <Frame name="PartyBotSheetTabFrame" setAllPoints="true" hidden="true">
+                <Frames>
+                    <!-- 3D Standing Character Model -->
+                    <PlayerModel name="PartyBotCharacterModel" enableMouse="true">
+                        <Size>
+                            <AbsDimension x="250" y="295"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="CENTER">
+                                <Offset>
+                                    <AbsDimension x="0" y="-18"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Frames>
+                            <!-- Rotate Left Button -->
+                            <Button name="PartyBotModelRotateLeftBtn" inherits="UIPanelButtonTemplate" text="&lt;">
+                                <Size>
+                                    <AbsDimension x="26" y="24"/>
+                                </Size>
+                                <Anchors>
+                                    <Anchor point="BOTTOMLEFT">
+                                        <Offset>
+                                            <AbsDimension x="10" y="10"/>
+                                        </Offset>
+                                    </Anchor>
+                                </Anchors>
+                                <Scripts>
+                                    <OnClick>
+                                        local m = PartyBotCharacterModel;
+                                        m.rotation = (m.rotation or 0) - 0.2;
+                                        m:SetRotation(m.rotation);
+                                    </OnClick>
+                                </Scripts>
+                            </Button>
+                            <!-- Rotate Right Button -->
+                            <Button name="PartyBotModelRotateRightBtn" inherits="UIPanelButtonTemplate" text="&gt;">
+                                <Size>
+                                    <AbsDimension x="26" y="24"/>
+                                </Size>
+                                <Anchors>
+                                    <Anchor point="BOTTOMRIGHT">
+                                        <Offset>
+                                            <AbsDimension x="-10" y="10"/>
+                                        </Offset>
+                                    </Anchor>
+                                </Anchors>
+                                <Scripts>
+                                    <OnClick>
+                                        local m = PartyBotCharacterModel;
+                                        m.rotation = (m.rotation or 0) + 0.2;
+                                        m:SetRotation(m.rotation);
+                                    </OnClick>
+                                </Scripts>
+                            </Button>
+                        </Frames>
+                        <Scripts>
+                            <OnLoad>
+                                this.rotation = 0;
+                                this:SetRotation(0);
+                            </OnLoad>
+                            <OnMouseDown>
+                                this.isDragging = true;
+                                local x, y = GetCursorPosition();
+                                this.prevX = x;
+                            </OnMouseDown>
+                            <OnMouseUp>
+                                this.isDragging = false;
+                            </OnMouseUp>
+                            <OnUpdate>
+                                if this.isDragging then
+                                    local x, y = GetCursorPosition();
+                                    local diff = x - (this.prevX or x);
+                                    this.prevX = x;
+                                    this.rotation = (this.rotation or 0) + diff * 0.03;
+                                    this:SetRotation(this.rotation);
+                                end
+                            </OnUpdate>
+                        </Scripts>
+                    </PlayerModel>
+                </Frames>
+            </Frame>
+
+            <!-- TAB 3: BAGS & ITEMS -->
+            <Frame name="PartyBotBagsTabFrame" setAllPoints="true" hidden="true">
+                <!-- Bag grid defined dynamically -->
+            </Frame>
+
+            <!-- TAB 4: TACTICS & COMMANDS -->
+            <Frame name="PartyBotTacticsTabFrame" setAllPoints="true" hidden="true">
+                <!-- Tactical controls defined dynamically -->
+            </Frame>
+        </Frames>
+        <Scripts>
+            <OnLoad>
+                this:RegisterForDrag("LeftButton");
+            </OnLoad>
+            <OnDragStart>
+                this:StartMoving();
+            </OnDragStart>
+            <OnDragStop>
+                this:StopMovingOrSizing();
+            </OnDragStop>
+        </Scripts>
+    </Frame>
+</Ui>
