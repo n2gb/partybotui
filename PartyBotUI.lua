@@ -9,6 +9,7 @@ PartyBotUIDB = PartyBotUIDB or {}
 local PartyBotUI_ActiveBots = {}
 local PartyBotUI_BotEquip = {}
 local PartyBotUI_BotBags = {}
+local PartyBotUI_BotMoney = {}
 local PartyBotUI_SelectedBot = 1
 local PartyBotUI_CurrentTab = 1
 local PartyBotUI_AOEState = false
@@ -243,6 +244,16 @@ function PartyBotUI_ProcessPBMessage(msg)
         return
     end
 
+    -- 4b. Bot money update: [PB_MONEY] <botName> <copper>
+    local _, _, mBot, mCopper = string.find(msg, "^%[PB_MONEY%]%s+(%S+)%s+(%d+)")
+    if mBot and mCopper then
+        PartyBotUI_BotMoney[mBot] = tonumber(mCopper) or 0
+        if PartyBotMainFrame:IsShown() and PartyBotUI_CurrentTab == 3 then
+            PartyBotUI_RenderBags()
+        end
+        return
+    end
+
     -- 5. Start of alts listing: [PB_ALTS_START]
     if string.find(msg, "^%[PB_ALTS_START%]") then
         PartyBotUI_AccountAlts = {}
@@ -369,9 +380,13 @@ function PartyBotUI_SelectTab(tabIndex)
     elseif tabIndex == 3 then
         PartyBotBagsTabFrame:Show()
         local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
-        if bot and not PartyBotUI_BotBags[bot.name] then
+        if bot then
             TargetUnit(bot.unit)
-            PartyBotUI_Command("bags " .. bot.name)
+            if not PartyBotUI_BotBags[bot.name] then
+                PartyBotUI_Command("bags " .. bot.name)
+            else
+                PartyBotUI_Command("money " .. bot.name)
+            end
         end
         PartyBotUI_RenderBags()
     elseif tabIndex == 4 then
@@ -857,6 +872,23 @@ end
 -- TAB 3: Bot Bags & Inventory Management
 -- ============================================================================
 
+function PartyBotUI_FormatMoneyCoins(copper)
+    copper = tonumber(copper) or 0
+    local gold = math.floor(copper / 10000)
+    local silver = math.floor(math.mod(copper, 10000) / 100)
+    local cop = math.mod(copper, 100)
+
+    local str = ""
+    if gold > 0 then
+        str = str .. string.format("%d|TInterface\\MoneyFrame\\UI-GoldIcon:13:13:2:0|t ", gold)
+    end
+    if silver > 0 or gold > 0 then
+        str = str .. string.format("%d|TInterface\\MoneyFrame\\UI-SilverIcon:13:13:2:0|t ", silver)
+    end
+    str = str .. string.format("%d|TInterface\\MoneyFrame\\UI-CopperIcon:13:13:2:0|t", cop)
+    return str
+end
+
 function PartyBotUI_RenderBags()
     local frame = PartyBotBagsTabFrame
 
@@ -938,9 +970,61 @@ function PartyBotUI_RenderBags()
             end
         end
 
+        -- Money Management Section at Bottom
+        frame.moneyLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        frame.moneyLabel:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 46)
+        frame.moneyLabel:SetText("Bot Wallet:")
+
+        frame.moneyDisplay = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        frame.moneyDisplay:SetPoint("LEFT", frame.moneyLabel, "RIGHT", 8, 0)
+        frame.moneyDisplay:SetText("0|TInterface\\MoneyFrame\\UI-CopperIcon:13:13:2:0|t")
+
+        frame.takeAllMoneyBtn = CreateFrame("Button", "PBBagsTakeAllMoneyBtn", frame, "UIPanelButtonTemplate")
+        frame.takeAllMoneyBtn:SetWidth(105)
+        frame.takeAllMoneyBtn:SetHeight(22)
+        frame.takeAllMoneyBtn:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -24, 42)
+        frame.takeAllMoneyBtn:SetText("Take All Gold")
+        frame.takeAllMoneyBtn:SetScript("OnClick", function()
+            local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+            if bot then
+                TargetUnit(bot.unit)
+                PartyBotUI_Command("money " .. bot.name .. " take all")
+            end
+        end)
+
+        frame.give5gBtn = CreateFrame("Button", "PBBagsGive5gBtn", frame, "UIPanelButtonTemplate")
+        frame.give5gBtn:SetWidth(45)
+        frame.give5gBtn:SetHeight(22)
+        frame.give5gBtn:SetPoint("RIGHT", frame.takeAllMoneyBtn, "LEFT", -6, 0)
+        frame.give5gBtn:SetText("+5g")
+        frame.give5gBtn:SetScript("OnClick", function()
+            local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+            if bot then
+                TargetUnit(bot.unit)
+                PartyBotUI_Command("money " .. bot.name .. " give 5g")
+            end
+        end)
+
+        frame.give1gBtn = CreateFrame("Button", "PBBagsGive1gBtn", frame, "UIPanelButtonTemplate")
+        frame.give1gBtn:SetWidth(45)
+        frame.give1gBtn:SetHeight(22)
+        frame.give1gBtn:SetPoint("RIGHT", frame.give5gBtn, "LEFT", -4, 0)
+        frame.give1gBtn:SetText("+1g")
+        frame.give1gBtn:SetScript("OnClick", function()
+            local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+            if bot then
+                TargetUnit(bot.unit)
+                PartyBotUI_Command("money " .. bot.name .. " give 1g")
+            end
+        end)
+
+        frame.giveLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        frame.giveLabel:SetPoint("RIGHT", frame.give1gBtn, "LEFT", -6, 0)
+        frame.giveLabel:SetText("Deposit:")
+
         -- Capacity / Summary Footer
         frame.summaryText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        frame.summaryText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 25, 18)
+        frame.summaryText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 18)
         frame.summaryText:SetText("Left-Click: Retrieve item to your bags. Right-Click: Equip item on bot.")
     end
 
@@ -1094,6 +1178,15 @@ function PartyBotUI_RenderBags()
         else
             btn:Hide()
         end
+    end
+
+    -- Update Money Display & Action Buttons
+    local botMoneyCopper = PartyBotUI_BotMoney[currentBot.name] or 0
+    frame.moneyDisplay:SetText(PartyBotUI_FormatMoneyCoins(botMoneyCopper))
+    if botMoneyCopper > 0 then
+        frame.takeAllMoneyBtn:Enable()
+    else
+        frame.takeAllMoneyBtn:Disable()
     end
 
     frame.summaryText:SetText(string.format("Capacity: %d/%d slots occupied (%d free)  |  Click an item to take it back.",
@@ -1382,6 +1475,14 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
         else
             DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[PartyBot]|r Please target a bot first.")
         end
+    elseif msg == "money" or string.find(msg, "^money") then
+        local name = UnitName("target")
+        local _, _, mArgs = string.find(msg, "^money%s*(.*)")
+        if name then
+            PartyBotUI_Command("money " .. name .. (mArgs and mArgs ~= "" and (" " .. mArgs) or ""))
+        else
+            PartyBotUI_Command("money " .. (mArgs or ""))
+        end
     else
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00PartyBotUI Commands:|r")
         DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb|r - Toggle main PartyBot manager window")
@@ -1392,5 +1493,6 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
         DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb follow|r - Order bots to regroup to you")
         DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb aoe|r - Toggle AOE spells on/off")
         DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb bags|r - Query targeted bot's bags")
+        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb money|r - Manage targeted bot's gold")
     end
 end
