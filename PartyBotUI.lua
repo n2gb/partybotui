@@ -880,12 +880,12 @@ function PartyBotUI_FormatMoneyCoins(copper)
 
     local str = ""
     if gold > 0 then
-        str = str .. string.format("%d|TInterface\\MoneyFrame\\UI-GoldIcon:13:13:2:0|t ", gold)
+        str = str .. string.format("%d|cffffd700g|r ", gold)
     end
     if silver > 0 or gold > 0 then
-        str = str .. string.format("%d|TInterface\\MoneyFrame\\UI-SilverIcon:13:13:2:0|t ", silver)
+        str = str .. string.format("%d|cffc7c7cfs|r ", silver)
     end
-    str = str .. string.format("%d|TInterface\\MoneyFrame\\UI-CopperIcon:13:13:2:0|t", cop)
+    str = str .. string.format("%d|cffeda55fc|r", cop)
     return str
 end
 
@@ -975,9 +975,38 @@ function PartyBotUI_RenderBags()
         frame.moneyLabel:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 46)
         frame.moneyLabel:SetText("Bot Wallet:")
 
-        frame.moneyDisplay = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        frame.moneyDisplay:SetPoint("LEFT", frame.moneyLabel, "RIGHT", 8, 0)
-        frame.moneyDisplay:SetText("0|TInterface\\MoneyFrame\\UI-CopperIcon:13:13:2:0|t")
+        -- Gold
+        frame.goldText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        frame.goldText:SetPoint("LEFT", frame.moneyLabel, "RIGHT", 6, 0)
+        frame.goldText:SetText("0")
+
+        frame.goldIcon = frame:CreateTexture(nil, "ARTWORK")
+        frame.goldIcon:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
+        frame.goldIcon:SetWidth(13)
+        frame.goldIcon:SetHeight(13)
+        frame.goldIcon:SetPoint("LEFT", frame.goldText, "RIGHT", 2, 0)
+
+        -- Silver
+        frame.silverText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        frame.silverText:SetPoint("LEFT", frame.goldIcon, "RIGHT", 5, 0)
+        frame.silverText:SetText("0")
+
+        frame.silverIcon = frame:CreateTexture(nil, "ARTWORK")
+        frame.silverIcon:SetTexture("Interface\\MoneyFrame\\UI-SilverIcon")
+        frame.silverIcon:SetWidth(13)
+        frame.silverIcon:SetHeight(13)
+        frame.silverIcon:SetPoint("LEFT", frame.silverText, "RIGHT", 2, 0)
+
+        -- Copper
+        frame.copperText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        frame.copperText:SetPoint("LEFT", frame.silverIcon, "RIGHT", 5, 0)
+        frame.copperText:SetText("0")
+
+        frame.copperIcon = frame:CreateTexture(nil, "ARTWORK")
+        frame.copperIcon:SetTexture("Interface\\MoneyFrame\\UI-CopperIcon")
+        frame.copperIcon:SetWidth(13)
+        frame.copperIcon:SetHeight(13)
+        frame.copperIcon:SetPoint("LEFT", frame.copperText, "RIGHT", 2, 0)
 
         frame.takeAllMoneyBtn = CreateFrame("Button", "PBBagsTakeAllMoneyBtn", frame, "UIPanelButtonTemplate")
         frame.takeAllMoneyBtn:SetWidth(105)
@@ -1182,7 +1211,41 @@ function PartyBotUI_RenderBags()
 
     -- Update Money Display & Action Buttons
     local botMoneyCopper = PartyBotUI_BotMoney[currentBot.name] or 0
-    frame.moneyDisplay:SetText(PartyBotUI_FormatMoneyCoins(botMoneyCopper))
+    local gold = math.floor(botMoneyCopper / 10000)
+    local silver = math.floor(math.mod(botMoneyCopper, 10000) / 100)
+    local cop = math.mod(botMoneyCopper, 100)
+
+    frame.goldText:SetText(gold)
+    frame.silverText:SetText(silver)
+    frame.copperText:SetText(cop)
+
+    if gold > 0 then
+        frame.goldText:Show()
+        frame.goldIcon:Show()
+    else
+        frame.goldText:Hide()
+        frame.goldIcon:Hide()
+    end
+
+    if gold > 0 or silver > 0 then
+        frame.silverText:Show()
+        frame.silverIcon:Show()
+        if gold == 0 then
+            frame.silverText:SetPoint("LEFT", frame.moneyLabel, "RIGHT", 6, 0)
+        else
+            frame.silverText:SetPoint("LEFT", frame.goldIcon, "RIGHT", 5, 0)
+        end
+    else
+        frame.silverText:Hide()
+        frame.silverIcon:Hide()
+    end
+
+    if gold == 0 and silver == 0 then
+        frame.copperText:SetPoint("LEFT", frame.moneyLabel, "RIGHT", 6, 0)
+    else
+        frame.copperText:SetPoint("LEFT", frame.silverIcon, "RIGHT", 5, 0)
+    end
+
     if botMoneyCopper > 0 then
         frame.takeAllMoneyBtn:Enable()
     else
