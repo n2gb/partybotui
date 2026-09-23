@@ -540,7 +540,40 @@
 
             <!-- TAB 3: BAGS & ITEMS -->
             <Frame name="PartyBotBagsTabFrame" setAllPoints="true" hidden="true">
-                <!-- Bag grid defined dynamically -->
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <FontString name="PartyBotBagsMoneyLabel" inherits="GameFontNormal" text="Bot Wallet:">
+                            <Anchors>
+                                <Anchor point="BOTTOMLEFT">
+                                    <Offset>
+                                        <AbsDimension x="24" y="46"/>
+                                    </Offset>
+                                </Anchor>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <Frame name="PartyBotBagsMoneyFrame" inherits="SmallMoneyFrameTemplate">
+                        <Anchors>
+                            <Anchor point="LEFT" relativeTo="PartyBotBagsMoneyLabel" relativePoint="RIGHT">
+                                <Offset>
+                                    <AbsDimension x="6" y="-1"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                SmallMoneyFrame_OnLoad();
+                                MoneyFrame_SetType("STATIC");
+                                this:UnregisterAllEvents();
+                            </OnLoad>
+                            <OnShow>
+                                -- Static money frame does not overwrite on show
+                            </OnShow>
+                        </Scripts>
+                    </Frame>
+                </Frames>
             </Frame>
 
             <!-- TAB 4: TACTICS & COMMANDS -->
