@@ -1,6 +1,7 @@
 ## Interface: 11200
 ## Title: PartyBotUI
 ## Notes: Comprehensive interface for vMaNGOS PartyBots: summon alts, inspect paperdoll character sheets, manage bags, view upgrade recommendations, and command combat.
+## Version: 1.1
 ## Author: Adam & Antigravity
 ## SavedVariables: PartyBotUIDB
 PartyBotUI.xml
