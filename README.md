@@ -45,13 +45,13 @@ It replaces raw chat slash commands with an authentic Blizzard-style management 
 
 ## Installation
 
-1. Download or clone this repository.
-2. Place the folder into your World of Warcraft `Interface\AddOns\` directory:
+1. Download the latest pre-packaged **[`PartyBotUI.zip`](https://github.com/n2gb/partybotui/releases/download/latest/PartyBotUI.zip)** (or from [Forgejo](https://git.adamheiden.com/adam/partybot-ui/releases/download/latest/PartyBotUI.zip)).
+2. Extract the archive directly into your World of Warcraft `Interface\AddOns\` directory:
    ```text
    World of Warcraft\Interface\AddOns\PartyBotUI\
    ```
    > [!IMPORTANT]
-   > Ensure the folder is named **`PartyBotUI`** (not `partybot-ui-main`). The folder name must match `PartyBotUI.toc`.
+   > The archive extracts directly as `PartyBotUI/`. Ensure the folder is placed in `Interface\AddOns\` matching `PartyBotUI.toc`.
 3. Launch WoW (or run `/console reloadui` if already in-game).
 4. Verify **PartyBotUI** is enabled in your character select **AddOns** menu.
 
