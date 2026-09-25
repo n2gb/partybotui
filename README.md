@@ -17,15 +17,15 @@ It replaces raw chat slash commands with an authentic Blizzard-style management 
 * **Party Slot Management:** Inspect active bots and dismiss them cleanly with one click (`.partybot remove`).
 
 ### 2. Paperdoll Character Sheet (Multi-Bot)
-* **Equipment Inspection:** Live display of all 19 equipment slots for each active partybot with colored quality borders (Common, Uncommon, Rare, Epic).
+* **Equipment Inspection:** Live display of all 19 equipment slots for each active partybot with classic Vanilla slot frames and quality highlights.
 * **3D Standing Character Model:** Features a standing character model matching your bot's race, gender, and gear. Click and drag or use the arrow buttons to spin the model.
 * **Right-Click Unequip:** Right-click any equipped item on your bot to order them to unequip it into their bags (`.partybot unequip`).
 * **Direct Trade Access:** One-click button to open a direct trade window with the bot.
 
 ### 3. Bot Bags & Inventory Grid
-* **Live Bag Visualization:** Inspect your bot's 16-slot backpack and all 4 equipped container bags (up to 88 total inventory slots).
+* **Live Bag Visualization:** Inspect your bot's 16-slot backpack and all 4 equipped container bags (up to 88 total inventory slots), framed like Vanilla item slots.
 * **Bag Container Filter:** Switch between "All Bags", "Backpack", or specific equipped container bags.
-* **1-Click Item Retrieval:** Left-click any item in your bot's inventory to order them to hand it over directly into your bags (`.partybot giveback`).
+* **1-Click Item Retrieval:** Left-click any item in your bot's inventory to order them to hand it over directly into your bags (`.partybot giveback`). The slot clears after the server confirms the transfer, and the addon refreshes the bag snapshot automatically.
 
 ### 4. Tactics & Combat Commands
 * **Role Switcher:** Change bot combat roles on the fly (`Tank`, `Healer`, `DPS`, `Melee DPS`, `Ranged DPS`).

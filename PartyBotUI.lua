@@ -10,6 +10,7 @@ local PartyBotUI_ActiveBots = {}
 local PartyBotUI_BotEquip = {}
 local PartyBotUI_BotBags = {}
 local PartyBotUI_BotMoney = {}
+local PartyBotUI_PendingGivebacks = {}
 local PartyBotUI_SelectedBot = 1
 local PartyBotUI_CurrentTab = 1
 local PartyBotUI_AOEState = false
@@ -168,6 +169,47 @@ end
 -- Bag Message Parser ([PB_BAGS] Server Extension)
 -- ============================================================================
 
+local function PartyBotUI_ConfirmGiveback(msg)
+    local _, _, itemId, botName = string.find(msg, "^Received .-|Hitem:(%d+):.- from (%S+)%.$")
+    if not itemId then return end
+
+    itemId = tonumber(itemId)
+    for index = table.getn(PartyBotUI_PendingGivebacks), 1, -1 do
+        local pending = PartyBotUI_PendingGivebacks[index]
+        if GetTime() - pending.sentAt > 30 then
+            table.remove(PartyBotUI_PendingGivebacks, index)
+        elseif pending.botName == botName and pending.itemId == itemId then
+            table.remove(PartyBotUI_PendingGivebacks, index)
+
+            -- Giveback takes the first matching item in backpack/bag order.
+            -- Clear that cached slot immediately, then request authoritative data.
+            local bagData = PartyBotUI_BotBags[botName]
+            if bagData then
+                local removed = false
+                for bagNum = 0, 4 do
+                    local items = bagData.items[bagNum] or {}
+                    local container = bagData.containers[bagNum]
+                    local slots = container and container.slots or 0
+                    for slot = 0, slots - 1 do
+                        if items[slot] and items[slot].id == itemId then
+                            items[slot] = nil
+                            removed = true
+                            break
+                        end
+                    end
+                    if removed then break end
+                end
+            end
+
+            if PartyBotMainFrame:IsShown() and PartyBotUI_CurrentTab == 3 then
+                PartyBotUI_RenderBags()
+            end
+            PartyBotUI_Command("bags " .. botName)
+            return
+        end
+    end
+end
+
 function PartyBotUI_ProcessPBMessage(msg)
     if not msg then return end
 
@@ -288,6 +330,9 @@ end
 -- Hook ChatFrame_OnEvent to suppress raw [PB_ signals from chat
 local pb_orig_ChatFrame_OnEvent = ChatFrame_OnEvent
 ChatFrame_OnEvent = function(event)
+    if event == "CHAT_MSG_SYSTEM" and arg1 then
+        PartyBotUI_ConfirmGiveback(arg1)
+    end
     if event == "CHAT_MSG_SYSTEM" and arg1 and string.find(arg1, "^%[PB_") then
         PartyBotUI_ProcessPBMessage(arg1)
         return -- Suppress from appearing in user's chat window!
@@ -1238,6 +1283,14 @@ function PartyBotUI_OnBagSlotClick(button, mouseBtn)
         DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s...", currentBot.name, button.itemLink))
     else
         TargetUnit(currentBot.unit)
+        local _, _, itemId = string.find(button.itemLink, "|Hitem:(%d+):")
+        if itemId then
+            table.insert(PartyBotUI_PendingGivebacks, {
+                botName = currentBot.name,
+                itemId = tonumber(itemId),
+                sentAt = GetTime()
+            })
+        end
         PartyBotUI_Command("giveback " .. button.itemLink)
         DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting %s from %s...", button.itemLink, currentBot.name))
     end
@@ -1442,7 +1495,7 @@ eventFrame:SetScript("OnEvent", function()
         PartyBotUIDB.accountAlts = PartyBotUIDB.accountAlts or {}
         PartyBotUI_UpdateNavButtons(1)
         PartyBotUI_Command("alts")
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00PartyBotUI v1.0 loaded.|r Type |cffffff00/pb|r or |cffffff00/partybot|r for commands.")
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00PartyBotUI v1.2 loaded.|r Type |cffffff00/pb|r or |cffffff00/partybot|r for commands.")
     elseif event == "PARTY_MEMBERS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
         PartyBotUI_UpdateRoster()
         PartyBotUI_Command("alts")

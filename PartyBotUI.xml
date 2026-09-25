@@ -10,10 +10,19 @@
                     <Color r="0.1" g="0.1" b="0.1" a="0.6"/>
                 </Texture>
             </Layer>
-            <Layer level="BORDER">
-                <Texture name="$parentIcon" setAllPoints="true"/>
+            <Layer level="ARTWORK">
+                <Texture name="$parentIcon">
+                    <Anchors>
+                        <Anchor point="TOPLEFT"><Offset><AbsDimension x="3" y="-3"/></Offset></Anchor>
+                        <Anchor point="BOTTOMRIGHT"><Offset><AbsDimension x="-3" y="3"/></Offset></Anchor>
+                    </Anchors>
+                </Texture>
             </Layer>
             <Layer level="OVERLAY">
+                <Texture name="$parentFrame" file="Interface\Buttons\UI-Quickslot2">
+                    <Size><AbsDimension x="64" y="64"/></Size>
+                    <Anchors><Anchor point="CENTER"/></Anchors>
+                </Texture>
                 <Texture name="$parentBorder" file="Interface\Buttons\UI-ActionButton-Border" alphaMode="ADD" hidden="true">
                     <Size>
                         <AbsDimension x="60" y="60"/>
@@ -64,10 +73,19 @@
                     <Color r="0.15" g="0.15" b="0.15" a="0.8"/>
                 </Texture>
             </Layer>
-            <Layer level="BORDER">
-                <Texture name="$parentIcon" setAllPoints="true"/>
+            <Layer level="ARTWORK">
+                <Texture name="$parentIcon">
+                    <Anchors>
+                        <Anchor point="TOPLEFT"><Offset><AbsDimension x="3" y="-3"/></Offset></Anchor>
+                        <Anchor point="BOTTOMRIGHT"><Offset><AbsDimension x="-3" y="3"/></Offset></Anchor>
+                    </Anchors>
+                </Texture>
             </Layer>
             <Layer level="OVERLAY">
+                <Texture name="$parentFrame" file="Interface\Buttons\UI-Quickslot2">
+                    <Size><AbsDimension x="60" y="60"/></Size>
+                    <Anchors><Anchor point="CENTER"/></Anchors>
+                </Texture>
                 <Texture name="$parentBorder" file="Interface\Buttons\UI-ActionButton-Border" alphaMode="ADD" hidden="true">
                     <Size>
                         <AbsDimension x="54" y="54"/>
