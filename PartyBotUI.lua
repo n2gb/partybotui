@@ -15,7 +15,6 @@ local PartyBotUI_SelectedBot = 1
 local PartyBotUI_CurrentTab = 1
 local PartyBotUI_AOEState = false
 local PartyBotUI_PendingInspect = nil
-local PartyBotUI_SelectedBagFilter = -1
 
 -- Standard 1.12.1 Equipment Slot IDs and Names
 local PB_SLOT_NAMES = {
@@ -949,7 +948,6 @@ function PartyBotUI_RenderBags()
             tab.botIndex = i
             tab:SetScript("OnClick", function()
                 PartyBotUI_SelectedBot = this.botIndex
-                PartyBotUI_SelectedBagFilter = -1
                 local b = PartyBotUI_ActiveBots[this.botIndex]
                 if b then
                     TargetUnit(b.unit)
@@ -989,33 +987,24 @@ function PartyBotUI_RenderBags()
             end
         end
 
-        -- Icon-only bag strip below the shared inventory grid. Clicking the
-        -- selected bag again returns to the combined view.
+        -- Icon-only bag strip below the shared inventory grid.
         frame.bagIcons = {}
         for bagNum = 0, 4 do
             local bagBtn = CreateFrame("Button", "PBBagIconBtn" .. bagNum, frame, "PartyBotBagSlotTemplate")
             bagBtn:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24 + bagNum * 44, 72)
-            bagBtn.bagFilter = bagNum
+            bagBtn.bagNum = bagNum
             bagBtn:SetScript("OnEnter", function()
                 GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
-                if this.bagLink then
-                    GameTooltip:SetHyperlink(this.bagLink)
-                elseif this.bagFilter == 0 then
+                if this.bagNum == 0 then
                     GameTooltip:SetText("Backpack")
+                elseif this.bagEntry and this.bagEntry > 0 then
+                    GameTooltip:SetText(this.bagName or "Equipped bag")
                 else
                     GameTooltip:SetText("Empty bag slot")
                 end
-                GameTooltip:AddLine("Click to view this bag; click again to show all bags.", 0.8, 0.8, 0.8, true)
                 GameTooltip:Show()
             end)
-            bagBtn:SetScript("OnClick", function()
-                if PartyBotUI_SelectedBagFilter == this.bagFilter then
-                    PartyBotUI_SelectedBagFilter = -1
-                else
-                    PartyBotUI_SelectedBagFilter = this.bagFilter
-                end
-                PartyBotUI_RenderBags()
-            end)
+            bagBtn:SetScript("OnClick", nil)
             frame.bagIcons[bagNum] = bagBtn
         end
 
@@ -1110,7 +1099,7 @@ function PartyBotUI_RenderBags()
 
     local botBagData = PartyBotUI_BotBags[currentBot.name]
 
-    -- Update bag icons and the selected bag highlight.
+    -- Update bag icons; they do not filter the inventory grid.
     local containers = botBagData and botBagData.containers
     for bagNum = 0, 4 do
         local bBtn = frame.bagIcons[bagNum]
@@ -1129,28 +1118,20 @@ function PartyBotUI_RenderBags()
             end
         end
         getglobal(bBtn:GetName() .. "Icon"):SetTexture(icon)
-        bBtn.bagLink = cInfo and cInfo.link
-        local border = getglobal(bBtn:GetName() .. "Border")
-        if bagNum == PartyBotUI_SelectedBagFilter then
-            border:SetVertexColor(1, 0.82, 0)
-            border:Show()
-        else
-            border:Hide()
+        bBtn.bagEntry = cInfo and cInfo.entry
+        bBtn.bagName = nil
+        if cInfo and cInfo.entry and cInfo.entry > 0 then
+            local itemName = GetItemInfo(cInfo.entry)
+            bBtn.bagName = itemName or "Equipped bag"
         end
+        getglobal(bBtn:GetName() .. "Border"):Hide()
     end
 
     -- Build list of displayable slots
     local slotList = {}
     if containers then
         local items = (botBagData and botBagData.items) or {}
-        local bagsToScan = {}
-        if PartyBotUI_SelectedBagFilter == -1 then
-            bagsToScan = { 0, 1, 2, 3, 4 }
-        else
-            bagsToScan = { PartyBotUI_SelectedBagFilter }
-        end
-
-        for _, bNum in ipairs(bagsToScan) do
+        for bNum = 0, 4 do
             local cInfo = containers[bNum]
             local numSlots = (cInfo and cInfo.slots) or (bNum == 0 and 16 or 0)
             local bItems = items[bNum] or {}

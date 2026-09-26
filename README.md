@@ -24,7 +24,7 @@ It replaces raw chat slash commands with an authentic Blizzard-style management 
 
 ### 3. Bot Bags & Inventory Grid
 * **Live Bag Visualization:** Inspect your bot's 16-slot backpack and all 4 equipped container bags (up to 88 total inventory slots), framed like Vanilla item slots.
-* **Icon-Only Bag Strip:** View all bags in one grid, or click a backpack/bag icon beneath it to inspect just that container. Click the selected icon again to return to all bags; no bag-number or slot-count tabs clutter the view.
+* **Icon-Only Bag Strip:** View all bags in one continuous grid with the backpack and equipped bag icons beneath it. The icons never filter inventory; no bag-number or slot-count tabs clutter the view.
 * **1-Click Item Retrieval:** Left-click any item in your bot's inventory to order them to hand it over directly into your bags (`.partybot giveback`). The slot clears after the server confirms the transfer, and the addon refreshes the bag snapshot automatically.
 
 ### 4. Tactics & Combat Commands
