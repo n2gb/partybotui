@@ -209,6 +209,13 @@ local function PartyBotUI_ConfirmGiveback(msg)
     end
 end
 
+local function PartyBotUI_ConfirmBagUpgrade(msg)
+    local _, _, botName = string.find(msg, "^Upgraded (%S+)'s bag with")
+    if botName then
+        PartyBotUI_Command("bags " .. botName)
+    end
+end
+
 function PartyBotUI_ProcessPBMessage(msg)
     if not msg then return end
 
@@ -331,6 +338,7 @@ local pb_orig_ChatFrame_OnEvent = ChatFrame_OnEvent
 ChatFrame_OnEvent = function(event)
     if event == "CHAT_MSG_SYSTEM" and arg1 then
         PartyBotUI_ConfirmGiveback(arg1)
+        PartyBotUI_ConfirmBagUpgrade(arg1)
     end
     if event == "CHAT_MSG_SYSTEM" and arg1 and string.find(arg1, "^%[PB_") then
         PartyBotUI_ProcessPBMessage(arg1)
@@ -997,14 +1005,41 @@ function PartyBotUI_RenderBags()
                 GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
                 if this.bagNum == 0 then
                     GameTooltip:SetText("Backpack")
+                    GameTooltip:AddLine("The backpack cannot be upgraded.", 0.8, 0.8, 0.8, true)
                 elseif this.bagEntry and this.bagEntry > 0 then
                     GameTooltip:SetText(this.bagName or "Equipped bag")
                 else
                     GameTooltip:SetText("Empty bag slot")
                 end
+                if this.bagNum > 0 then
+                    GameTooltip:AddLine("Drag an empty larger bag from your inventory here to upgrade.", 0.8, 0.8, 0.8, true)
+                end
                 GameTooltip:Show()
             end)
-            bagBtn:SetScript("OnClick", nil)
+            bagBtn:SetScript("OnClick", function()
+                if this.bagNum == 0 or not CursorHasItem() or
+                   not PartyBotUI_CursorItem or not PartyBotUI_CursorItem.link then
+                    return
+                end
+
+                local currentBot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+                if not currentBot then return end
+                local itemLink = PartyBotUI_CursorItem.link
+
+                -- Return the client cursor item before requesting the server-side move.
+                if PartyBotUI_CursorItem.type == "container" then
+                    pb_orig_PickupContainerItem(PartyBotUI_CursorItem.bag, PartyBotUI_CursorItem.slot)
+                elseif PartyBotUI_CursorItem.type == "inventory" then
+                    pb_orig_PickupInventoryItem(PartyBotUI_CursorItem.slot)
+                else
+                    pb_orig_ClearCursor()
+                end
+                PartyBotUI_CursorItem = nil
+
+                TargetUnit(currentBot.unit)
+                PartyBotUI_Command(string.format("bagupgrade %s %d %s", currentBot.name, this.bagNum, itemLink))
+                DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting a bag upgrade for %s...", currentBot.name))
+            end)
             frame.bagIcons[bagNum] = bagBtn
         end
 
