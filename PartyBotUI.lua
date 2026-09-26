@@ -218,7 +218,7 @@ function PartyBotUI_ProcessPBMessage(msg)
     if startBot then
         PartyBotUI_BotBags[startBot] = {
             containers = {
-                [0] = { name = "Backpack", slots = 16, icon = "Interface\\Buttons\\Button-Backpack-Up" },
+                [0] = { name = "Backpack", slots = 16, icon = "Interface\\Icons\\INV_Misc_Bag_08" },
                 [1] = { name = "Bag 1", slots = 0 },
                 [2] = { name = "Bag 2", slots = 0 },
                 [3] = { name = "Bag 3", slots = 0 },
@@ -949,6 +949,7 @@ function PartyBotUI_RenderBags()
             tab.botIndex = i
             tab:SetScript("OnClick", function()
                 PartyBotUI_SelectedBot = this.botIndex
+                PartyBotUI_SelectedBagFilter = -1
                 local b = PartyBotUI_ActiveBots[this.botIndex]
                 if b then
                     TargetUnit(b.unit)
@@ -976,43 +977,46 @@ function PartyBotUI_RenderBags()
             end
         end)
 
-        -- Container Bag Filter Buttons
-        frame.bagFilterButtons = {}
-        local bagFilters = {
-            { label = "All Bags", filter = -1, width = 75 },
-            { label = "Backpack", filter = 0, width = 75 },
-            { label = "Bag 1", filter = 1, width = 65 },
-            { label = "Bag 2", filter = 2, width = 65 },
-            { label = "Bag 3", filter = 3, width = 65 },
-            { label = "Bag 4", filter = 4, width = 65 },
-        }
-
-        local startX = 22
-        for idx, bf in ipairs(bagFilters) do
-            local bBtn = CreateFrame("Button", "PBBagFilterBtn" .. idx, frame, "UIPanelButtonTemplate")
-            bBtn:SetWidth(bf.width)
-            bBtn:SetHeight(22)
-            bBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", startX, -124)
-            bBtn:SetText(bf.label)
-            bBtn.bagFilter = bf.filter
-            bBtn:SetScript("OnClick", function()
-                PartyBotUI_SelectedBagFilter = this.bagFilter
-                PartyBotUI_RenderBags()
-            end)
-            frame.bagFilterButtons[idx] = bBtn
-            startX = startX + bf.width + 6
-        end
-
         -- Create up to 88 Bag Slots (11 columns x 8 rows)
         frame.bagSlots = {}
         for row = 0, 7 do
             for col = 0, 10 do
                 local slotIndex = row * 11 + col
                 local btn = CreateFrame("Button", "PBBagSlotBtn" .. slotIndex, frame, "PartyBotBagSlotTemplate")
-                btn:SetPoint("TOPLEFT", frame, "TOPLEFT", 24 + col * 44, -152 - row * 37)
+                btn:SetPoint("TOPLEFT", frame, "TOPLEFT", 24 + col * 44, -130 - row * 37)
                 btn.slotIndex = slotIndex
                 frame.bagSlots[slotIndex] = btn
             end
+        end
+
+        -- Icon-only bag strip below the shared inventory grid. Clicking the
+        -- selected bag again returns to the combined view.
+        frame.bagIcons = {}
+        for bagNum = 0, 4 do
+            local bagBtn = CreateFrame("Button", "PBBagIconBtn" .. bagNum, frame, "PartyBotBagSlotTemplate")
+            bagBtn:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24 + bagNum * 44, 72)
+            bagBtn.bagFilter = bagNum
+            bagBtn:SetScript("OnEnter", function()
+                GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+                if this.bagLink then
+                    GameTooltip:SetHyperlink(this.bagLink)
+                elseif this.bagFilter == 0 then
+                    GameTooltip:SetText("Backpack")
+                else
+                    GameTooltip:SetText("Empty bag slot")
+                end
+                GameTooltip:AddLine("Click to view this bag; click again to show all bags.", 0.8, 0.8, 0.8, true)
+                GameTooltip:Show()
+            end)
+            bagBtn:SetScript("OnClick", function()
+                if PartyBotUI_SelectedBagFilter == this.bagFilter then
+                    PartyBotUI_SelectedBagFilter = -1
+                else
+                    PartyBotUI_SelectedBagFilter = this.bagFilter
+                end
+                PartyBotUI_RenderBags()
+            end)
+            frame.bagIcons[bagNum] = bagBtn
         end
 
         -- Money Action Buttons at Bottom (PartyBotBagsMoneyLabel and PartyBotBagsMoneyFrame defined in XML)
@@ -1060,10 +1064,10 @@ function PartyBotUI_RenderBags()
         frame.giveLabel:SetPoint("RIGHT", frame.give1gBtn, "LEFT", -6, 0)
         frame.giveLabel:SetText("Deposit:")
 
-        -- Capacity / Summary Footer
+        -- Compact interaction hint, without slot counts.
         frame.summaryText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         frame.summaryText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 18)
-        frame.summaryText:SetText("Left-Click: Retrieve item to your bags. Right-Click: Equip item on bot.")
+        frame.summaryText:SetText("Left-click item: take back  |  Right-click item: equip")
     end
 
     -- Update sub tabs
@@ -1083,7 +1087,7 @@ function PartyBotUI_RenderBags()
     if not currentBot then
         frame.header:SetText("No active partybot in this slot.")
         for _, btn in pairs(frame.bagSlots) do btn:Hide() end
-        for _, bBtn in pairs(frame.bagFilterButtons) do bBtn:Hide() end
+        for _, bBtn in pairs(frame.bagIcons) do bBtn:Hide() end
         if PartyBotBagsMoneyFrame then PartyBotBagsMoneyFrame:Hide() end
         if PartyBotBagsMoneyLabel then PartyBotBagsMoneyLabel:Hide() end
         if frame.takeAllMoneyBtn then frame.takeAllMoneyBtn:Hide() end
@@ -1100,41 +1104,43 @@ function PartyBotUI_RenderBags()
     if frame.give1gBtn then frame.give1gBtn:Show() end
     if frame.giveLabel then frame.giveLabel:Show() end
 
-    for _, bBtn in pairs(frame.bagFilterButtons) do bBtn:Show() end
+    for _, bBtn in pairs(frame.bagIcons) do bBtn:Show() end
 
     frame.header:SetText(string.format("Bags for: |cffffff00%s|r (Level %d %s)", currentBot.name, currentBot.level, currentBot.class))
 
     local botBagData = PartyBotUI_BotBags[currentBot.name]
 
-    -- Update Bag Filter Buttons text & highlights
+    -- Update bag icons and the selected bag highlight.
     local containers = botBagData and botBagData.containers
-    for idx, bBtn in ipairs(frame.bagFilterButtons) do
-        local f = bBtn.bagFilter
-        if f == PartyBotUI_SelectedBagFilter then
-            bBtn:LockHighlight()
-        else
-            bBtn:UnlockHighlight()
+    for bagNum = 0, 4 do
+        local bBtn = frame.bagIcons[bagNum]
+        local cInfo = containers and containers[bagNum]
+        local icon = cInfo and cInfo.icon
+        if not icon and cInfo and cInfo.entry and cInfo.entry > 0 then
+            local _, _, _, _, _, _, _, _, itemTexture = GetItemInfo(cInfo.entry)
+            icon = itemTexture
+            cInfo.icon = icon
         end
-
-        if f == -1 then
-            bBtn:SetText("All Bags")
-        elseif f == 0 then
-            bBtn:SetText("Backpack")
-        else
-            local cInfo = containers and containers[f]
-            if cInfo and cInfo.slots and cInfo.slots > 0 then
-                bBtn:SetText(string.format("Bag %d (%d)", f, cInfo.slots))
+        if not icon then
+            if bagNum == 0 then
+                icon = "Interface\\Icons\\INV_Misc_Bag_08"
             else
-                bBtn:SetText(string.format("Bag %d", f))
+                icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Bag"
             end
+        end
+        getglobal(bBtn:GetName() .. "Icon"):SetTexture(icon)
+        bBtn.bagLink = cInfo and cInfo.link
+        local border = getglobal(bBtn:GetName() .. "Border")
+        if bagNum == PartyBotUI_SelectedBagFilter then
+            border:SetVertexColor(1, 0.82, 0)
+            border:Show()
+        else
+            border:Hide()
         end
     end
 
     -- Build list of displayable slots
     local slotList = {}
-    local totalCapacity = 16
-    local totalOccupied = 0
-
     if containers then
         local items = (botBagData and botBagData.items) or {}
         local bagsToScan = {}
@@ -1144,15 +1150,12 @@ function PartyBotUI_RenderBags()
             bagsToScan = { PartyBotUI_SelectedBagFilter }
         end
 
-        totalCapacity = 0
         for _, bNum in ipairs(bagsToScan) do
             local cInfo = containers[bNum]
             local numSlots = (cInfo and cInfo.slots) or (bNum == 0 and 16 or 0)
-            totalCapacity = totalCapacity + numSlots
             local bItems = items[bNum] or {}
             for s = 0, numSlots - 1 do
                 local it = bItems[s]
-                if it then totalOccupied = totalOccupied + 1 end
                 table.insert(slotList, {
                     bagNum = bNum,
                     slotIndex = s,
@@ -1250,24 +1253,18 @@ function PartyBotUI_RenderBags()
     else
         frame.takeAllMoneyBtn:Disable()
     end
-
-    frame.summaryText:SetText(string.format("Capacity: %d/%d slots occupied (%d free)  |  Click an item to take it back.",
-        totalOccupied, totalCapacity, totalCapacity - totalOccupied))
 end
 
 function PartyBotUI_OnBagSlotEnter(button)
     if button.itemLink or button.itemId then
         PartyBotUI_ShowItemTooltip(GameTooltip, button, button.itemLink, button.itemId)
         GameTooltip:AddLine(" ")
-        local bagDesc = button.bagName or "Backpack"
-        GameTooltip:AddLine(string.format("|cff888888%s, Slot %d|r", bagDesc, (button.slotIndex or 0) + 1))
         GameTooltip:AddLine("|cff00ff00Left-Click: Retrieve into your bags|r", 0.8, 0.8, 0.8)
         GameTooltip:AddLine("|cffffd200Right-Click: Equip on this bot|r", 0.8, 0.8, 0.8)
         GameTooltip:Show()
     else
-        local bagDesc = button.bagName or "Backpack"
         GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-        GameTooltip:SetText(string.format("%s Slot %d (Empty)", bagDesc, (button.slotIndex or 0) + 1), 1, 1, 1)
+        GameTooltip:SetText("Empty slot", 1, 1, 1)
         GameTooltip:Show()
     end
 end
