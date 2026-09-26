@@ -65,7 +65,7 @@
     <!-- Template for Bag Slot Button -->
     <Button name="PartyBotBagSlotTemplate" virtual="true">
         <Size>
-            <AbsDimension x="34" y="34"/>
+            <AbsDimension x="50" y="50"/>
         </Size>
         <Layers>
             <Layer level="BACKGROUND">
@@ -83,12 +83,12 @@
             </Layer>
             <Layer level="OVERLAY">
                 <Texture name="$parentFrame" file="Interface\Buttons\UI-Quickslot2">
-                    <Size><AbsDimension x="60" y="60"/></Size>
+                    <Size><AbsDimension x="80" y="80"/></Size>
                     <Anchors><Anchor point="CENTER"/></Anchors>
                 </Texture>
                 <Texture name="$parentBorder" file="Interface\Buttons\UI-ActionButton-Border" alphaMode="ADD" hidden="true">
                     <Size>
-                        <AbsDimension x="54" y="54"/>
+                        <AbsDimension x="76" y="76"/>
                     </Size>
                     <Anchors>
                         <Anchor point="CENTER"/>

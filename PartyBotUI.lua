@@ -11,6 +11,7 @@ local PartyBotUI_BotEquip = {}
 local PartyBotUI_BotBags = {}
 local PartyBotUI_BotMoney = {}
 local PartyBotUI_PendingGivebacks = {}
+local PartyBotUI_PendingBotBagUpgrade = nil
 local PartyBotUI_SelectedBot = 1
 local PartyBotUI_CurrentTab = 1
 local PartyBotUI_AOEState = false
@@ -414,6 +415,9 @@ end
 function PartyBotUI_SelectTab(tabIndex)
     PartyBotUI_CurrentTab = tabIndex
     PartyBotUI_UpdateNavButtons(tabIndex)
+    PartyBotMainFrame:SetWidth(tabIndex == 3 and 700 or 530)
+    PartyBotMainFrame:SetHeight(tabIndex == 3 and 710 or 550)
+    if tabIndex ~= 3 then PartyBotUI_PendingBotBagUpgrade = nil end
 
     PartyBotRosterTabFrame:Hide()
     PartyBotSheetTabFrame:Hide()
@@ -552,6 +556,7 @@ function PartyBotUI_RenderRoster()
             entry.btn.botIndex = i
             entry.btn:SetScript("OnClick", function()
                 PartyBotUI_SelectedBot = this.botIndex
+                PartyBotUI_PendingBotBagUpgrade = nil
                 PartyBotUI_SelectTab(2) -- Switch to character sheet
             end)
             entry.remBtn:Show()
@@ -956,6 +961,7 @@ function PartyBotUI_RenderBags()
             tab.botIndex = i
             tab:SetScript("OnClick", function()
                 PartyBotUI_SelectedBot = this.botIndex
+                PartyBotUI_PendingBotBagUpgrade = nil
                 local b = PartyBotUI_ActiveBots[this.botIndex]
                 if b then
                     TargetUnit(b.unit)
@@ -989,7 +995,7 @@ function PartyBotUI_RenderBags()
             for col = 0, 10 do
                 local slotIndex = row * 11 + col
                 local btn = CreateFrame("Button", "PBBagSlotBtn" .. slotIndex, frame, "PartyBotBagSlotTemplate")
-                btn:SetPoint("TOPLEFT", frame, "TOPLEFT", 24 + col * 44, -130 - row * 37)
+                btn:SetPoint("TOPLEFT", frame, "TOPLEFT", 24 + col * 58, -130 - row * 56)
                 btn.slotIndex = slotIndex
                 frame.bagSlots[slotIndex] = btn
             end
@@ -999,7 +1005,7 @@ function PartyBotUI_RenderBags()
         frame.bagIcons = {}
         for bagNum = 0, 4 do
             local bagBtn = CreateFrame("Button", "PBBagIconBtn" .. bagNum, frame, "PartyBotBagSlotTemplate")
-            bagBtn:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24 + bagNum * 44, 72)
+            bagBtn:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24 + bagNum * 58, 72)
             bagBtn.bagNum = bagNum
             bagBtn:SetScript("OnEnter", function()
                 GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
@@ -1013,17 +1019,24 @@ function PartyBotUI_RenderBags()
                 end
                 if this.bagNum > 0 then
                     GameTooltip:AddLine("Drag an empty larger bag from your inventory here to upgrade.", 0.8, 0.8, 0.8, true)
+                    GameTooltip:AddLine("Or right-click a bag in the bot's inventory, then click this slot.", 0.8, 0.8, 0.8, true)
                 end
                 GameTooltip:Show()
             end)
             bagBtn:SetScript("OnClick", function()
-                if this.bagNum == 0 or not CursorHasItem() or
-                   not PartyBotUI_CursorItem or not PartyBotUI_CursorItem.link then
-                    return
-                end
-
+                if this.bagNum == 0 then return end
                 local currentBot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
                 if not currentBot then return end
+                if PartyBotUI_PendingBotBagUpgrade and not CursorHasItem() then
+                    local pending = PartyBotUI_PendingBotBagUpgrade
+                    PartyBotUI_PendingBotBagUpgrade = nil
+                    if pending.botName ~= currentBot.name then return end
+                    TargetUnit(currentBot.unit)
+                    PartyBotUI_Command(string.format("bagupgrade %s %d bot %s", currentBot.name, this.bagNum, pending.link))
+                    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting a bag upgrade for %s...", currentBot.name))
+                    return
+                end
+                if not CursorHasItem() or not PartyBotUI_CursorItem or not PartyBotUI_CursorItem.link then return end
                 local itemLink = PartyBotUI_CursorItem.link
 
                 -- Return the client cursor item before requesting the server-side move.
@@ -1277,6 +1290,7 @@ function PartyBotUI_OnBagSlotEnter(button)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("|cff00ff00Left-Click: Retrieve into your bags|r", 0.8, 0.8, 0.8)
         GameTooltip:AddLine("|cffffd200Right-Click: Equip on this bot|r", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("|cffffd200Bag: Right-Click, then choose a bag slot below|r", 0.8, 0.8, 0.8)
         GameTooltip:Show()
     else
         GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
@@ -1291,6 +1305,12 @@ function PartyBotUI_OnBagSlotClick(button, mouseBtn)
     if not currentBot then return end
 
     if mouseBtn == "RightButton" then
+        local _, _, _, _, _, _, _, equipLoc = GetItemInfo(button.itemLink)
+        if equipLoc == "INVTYPE_BAG" or equipLoc == "INVTYPE_QUIVER" or IsShiftKeyDown() then
+            PartyBotUI_PendingBotBagUpgrade = {botName = currentBot.name, link = button.itemLink}
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[PartyBot]|r Click the bag slot below that you want to upgrade. The replacement bag must be empty and larger.")
+            return
+        end
         TargetUnit(currentBot.unit)
         PartyBotUI_Command(string.format("equip %s %s", currentBot.name, button.itemLink))
         DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s...", currentBot.name, button.itemLink))
