@@ -16,6 +16,7 @@ local PartyBotUI_SelectedBot = 1
 local PartyBotUI_CurrentTab = 1
 local PartyBotUI_AOEState = false
 local PartyBotUI_PendingInspect = nil
+local PartyBotUI_LastCommandAt = nil
 
 -- Standard 1.12.1 Equipment Slot IDs and Names
 local PB_SLOT_NAMES = {
@@ -72,19 +73,37 @@ local PB_CLASS_NAMES = {
 
 function PartyBotUI_Command(cmd)
     if cmd and cmd ~= "" then
+        PartyBotUI_LastCommandAt = GetTime()
         SendChatMessage(".partybot " .. cmd, "SAY")
     end
+end
+
+local function PartyBotUI_IsCommandError(msg)
+    local lower = string.lower(msg or "")
+    local errorText = {
+        "cannot", "can't", "unable", "error", "failed", "failure",
+        "not found", "not a party bot", "not wearing", "no suitable",
+        "no item", "no character selected", "you are not", "usage:",
+        "unknown", "invalid", "incorrect", "must ", "requires ",
+        "is full", "while dead", "in combat", "you can only",
+        "choose a bag", "replacement bag", "need "
+    }
+
+    for _, text in ipairs(errorText) do
+        if string.find(lower, text, 1, true) then
+            return true
+        end
+    end
+    return false
 end
 
 function PartyBotUI_ToggleAOE()
     PartyBotUI_AOEState = not PartyBotUI_AOEState
     if PartyBotUI_AOEState then
         PartyBotUI_Command("aoe on")
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[PartyBot]|r AOE enabled for partybots.")
         if PartyBotDockAOEBtn then PartyBotDockAOEBtn:SetText("AOE*") end
     else
         PartyBotUI_Command("aoe off")
-        DEFAULT_CHAT_FRAME:AddMessage("|cffffd200[PartyBot]|r AOE disabled for partybots.")
         if PartyBotDockAOEBtn then PartyBotDockAOEBtn:SetText("AOE") end
     end
 end
@@ -345,6 +364,11 @@ ChatFrame_OnEvent = function(event)
         PartyBotUI_ProcessPBMessage(arg1)
         return -- Suppress from appearing in user's chat window!
     end
+    if event == "CHAT_MSG_SYSTEM" and arg1 and PartyBotUI_LastCommandAt and GetTime() - PartyBotUI_LastCommandAt < 5 then
+        if not PartyBotUI_IsCommandError(arg1) then
+            return -- Keep successful PartyBot command responses out of chat.
+        end
+    end
     return pb_orig_ChatFrame_OnEvent(event)
 end
 
@@ -503,7 +527,6 @@ function PartyBotUI_RenderRoster()
         refreshAltsBtn:SetText("Refresh")
         refreshAltsBtn:SetScript("OnClick", function()
             PartyBotUI_Command("alts")
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[PartyBot]|r Querying account alts list...")
         end)
         frame.refreshAltsBtn = refreshAltsBtn
 
@@ -910,10 +933,8 @@ function PartyBotUI_OnSlotClick(button, mouseBtn)
         end
         PartyBotUI_CursorItem = nil
 
-        local slotName = PB_SLOT_NAMES[slotId] or ("slot " .. slotId)
         TargetUnit(currentBot.unit)
         PartyBotUI_Command(string.format("equip %s %d %s", currentBot.name, slotId, itemLink))
-        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s in %s slot...", currentBot.name, itemLink, slotName))
         PlaySound("ITEM_ARMOR_EQUIP")
         return
     end
@@ -921,7 +942,6 @@ function PartyBotUI_OnSlotClick(button, mouseBtn)
     if mouseBtn == "RightButton" and button.itemLink then
         TargetUnit(currentBot.unit)
         PartyBotUI_Command("unequip " .. button.itemLink)
-        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to unequip %s...", currentBot.name, button.itemLink))
     end
 end
 
@@ -1033,7 +1053,6 @@ function PartyBotUI_RenderBags()
                     if pending.botName ~= currentBot.name then return end
                     TargetUnit(currentBot.unit)
                     PartyBotUI_Command(string.format("bagupgrade %s %d bot %s", currentBot.name, this.bagNum, pending.link))
-                    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting a bag upgrade for %s...", currentBot.name))
                     return
                 end
                 if not CursorHasItem() or not PartyBotUI_CursorItem or not PartyBotUI_CursorItem.link then return end
@@ -1051,7 +1070,6 @@ function PartyBotUI_RenderBags()
 
                 TargetUnit(currentBot.unit)
                 PartyBotUI_Command(string.format("bagupgrade %s %d %s", currentBot.name, this.bagNum, itemLink))
-                DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting a bag upgrade for %s...", currentBot.name))
             end)
             frame.bagIcons[bagNum] = bagBtn
         end
@@ -1308,12 +1326,10 @@ function PartyBotUI_OnBagSlotClick(button, mouseBtn)
         local _, _, _, _, _, _, _, equipLoc = GetItemInfo(button.itemLink)
         if equipLoc == "INVTYPE_BAG" or equipLoc == "INVTYPE_QUIVER" or IsShiftKeyDown() then
             PartyBotUI_PendingBotBagUpgrade = {botName = currentBot.name, link = button.itemLink}
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[PartyBot]|r Click the bag slot below that you want to upgrade. The replacement bag must be empty and larger.")
             return
         end
         TargetUnit(currentBot.unit)
         PartyBotUI_Command(string.format("equip %s %s", currentBot.name, button.itemLink))
-        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Ordering %s to equip %s...", currentBot.name, button.itemLink))
     else
         TargetUnit(currentBot.unit)
         local _, _, itemId = string.find(button.itemLink, "|Hitem:(%d+):")
@@ -1325,7 +1341,6 @@ function PartyBotUI_OnBagSlotClick(button, mouseBtn)
             })
         end
         PartyBotUI_Command("giveback " .. button.itemLink)
-        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ff00[PartyBot]|r Requesting %s from %s...", button.itemLink, currentBot.name))
     end
 end
 
@@ -1528,7 +1543,6 @@ eventFrame:SetScript("OnEvent", function()
         PartyBotUIDB.accountAlts = PartyBotUIDB.accountAlts or {}
         PartyBotUI_UpdateNavButtons(1)
         PartyBotUI_Command("alts")
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00PartyBotUI v1.2 loaded.|r Type |cffffff00/pb|r or |cffffff00/partybot|r for commands.")
     elseif event == "PARTY_MEMBERS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
         PartyBotUI_UpdateRoster()
         PartyBotUI_Command("alts")
@@ -1587,15 +1601,6 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
             PartyBotUI_Command("money " .. (mArgs or ""))
         end
     else
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00PartyBotUI Commands:|r")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb|r - Toggle main PartyBot manager window")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb dock|r - Toggle floating tactical dock")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb pull|r - Order Tank bot to pull target")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb atk|r - Order bots to attack target")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb stop|r - Order bots to stop attack")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb follow|r - Order bots to regroup to you")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb aoe|r - Toggle AOE spells on/off")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb bags|r - Query targeted bot's bags")
-        DEFAULT_CHAT_FRAME:AddMessage("  |cffffff00/pb money|r - Manage targeted bot's gold")
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[PartyBot]|r Unknown command. Use /pb, /pb dock, /pb pull, /pb atk, /pb stop, /pb follow, /pb aoe, /pb bags, or /pb money.")
     end
 end
