@@ -17,6 +17,7 @@ local PartyBotUI_CurrentTab = 1
 local PartyBotUI_AOEState = false
 local PartyBotUI_PendingInspect = nil
 local PartyBotUI_LastCommandAt = nil
+local PB_ACCOUNT_ALT_LIMIT = 9
 
 -- Standard 1.12.1 Equipment Slot IDs and Names
 local PB_SLOT_NAMES = {
@@ -516,7 +517,7 @@ function PartyBotUI_RenderRoster()
 
         -- Section 2: Account Alts
         local header2 = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        header2:SetPoint("TOPLEFT", header1, "BOTTOMLEFT", 0, -126)
+        header2:SetPoint("TOPLEFT", header1, "BOTTOMLEFT", 0, -150)
         header2:SetText("Your Account Characters:")
         frame.header2 = header2
 
@@ -536,7 +537,7 @@ function PartyBotUI_RenderRoster()
         frame.altStatus = altStatus
 
         frame.altButtons = {}
-        for row = 0, 3 do
+        for row = 0, 2 do
             for col = 0, 2 do
                 local idx = row * 3 + col + 1
                 local btn = CreateFrame("Button", "PBAltSummonBtn" .. idx, frame, "UIPanelButtonTemplate")
@@ -549,7 +550,7 @@ function PartyBotUI_RenderRoster()
 
         -- Section 3: Generic Fill Bots
         local header3 = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        header3:SetPoint("TOPLEFT", header2, "BOTTOMLEFT", 0, -135)
+        header3:SetPoint("TOPLEFT", header2, "BOTTOMLEFT", 0, -150)
         header3:SetText("Quick-Add Class Role Bots (.partybot add):")
         frame.header3 = header3
 
@@ -609,7 +610,7 @@ function PartyBotUI_RenderRoster()
         frame.altStatus:SetText(string.format("|cff888888(%d found)|r", numAlts))
     end
 
-    for idx = 1, 12 do
+    for idx = 1, PB_ACCOUNT_ALT_LIMIT do
         local btn = frame.altButtons[idx]
         if idx <= numAlts then
             local alt = alts[idx]

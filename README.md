@@ -9,7 +9,7 @@ It replaces raw chat slash commands with an authentic Blizzard-style management 
 ## Features
 
 ### 1. Roster & Account Alts Manager
-* **Dynamic Alt Discovery:** Automatically queries the server (`.partybot alts`) to discover all characters created on your account.
+* **Dynamic Alt Discovery:** Automatically queries the server (`.partybot alts`) to discover your account characters and presents up to nine of them in a balanced three-row roster layout.
 * **1-Click Alt Summoning:** Click any alt's name to summon them as an active partybot into your group (`.partybot load`).
 * **Hover Details:** Hover over any alt to view their level, race, class, and whether they are currently in your party.
 * **Manual Refresh:** Re-query the server anytime with the "Refresh" button.
@@ -76,3 +76,7 @@ It replaces raw chat slash commands with an authentic Blizzard-style management 
 ## Compatibility
 * **Client:** World of Warcraft (Vanilla 1.12.1 / Build 5875)
 * **Server:** vMaNGOS (Vanilla mangos core)
+
+## Release Notes
+
+See [CHANGELOG.md](CHANGELOG.md) for version history. Version 1.4.3 balances the roster section spacing without increasing the PartyBot Manager window size.
