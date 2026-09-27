@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.5
+
+- Render crowd-control and focus marks through the native raid-target texture helper, with explicit coordinates for Vanilla's four-by-two icon atlas as a fallback.
+- Keep the icon texture above the button artwork so every raid mark remains visible.
+- Balance vertical spacing across the Tactics & Roles sections to use the full manager height consistently with the roster tab.
+
 ## 1.4.4
 
 - Replace the abbreviated text on crowd-control and focus-mark buttons with the matching in-game raid-target icon textures.

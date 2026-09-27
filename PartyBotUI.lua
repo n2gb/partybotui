@@ -1371,7 +1371,7 @@ function PartyBotUI_RenderTactics()
         for idx, r in ipairs(roles) do
             local btn = CreateFrame("Button", "PBRoleBtn" .. idx, frame, "UIPanelButtonTemplate")
             btn:SetWidth(90)
-btn:SetHeight(24)
+            btn:SetHeight(24)
             btn:SetPoint("TOPLEFT", rHeader, "BOTTOMLEFT", (idx - 1) * 94, -8)
             btn:SetText(r.name)
             btn.cmd = r.cmd
@@ -1382,7 +1382,7 @@ btn:SetHeight(24)
 
         -- Section 2: Combat Flow Commands
         local cHeader = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        cHeader:SetPoint("TOPLEFT", rHeader, "BOTTOMLEFT", 0, -45)
+        cHeader:SetPoint("TOPLEFT", rHeader, "BOTTOMLEFT", 0, -65)
         cHeader:SetText("Tactical Commands:")
 
         local combatCmds = {
@@ -1416,18 +1416,29 @@ btn:SetHeight(24)
 
         -- Section 3: Raid Marks CC & Focus
         local mHeader = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        mHeader:SetPoint("TOPLEFT", cHeader, "BOTTOMLEFT", 0, -145)
+        mHeader:SetPoint("TOPLEFT", cHeader, "BOTTOMLEFT", 0, -170)
         mHeader:SetText("Crowd Control & Focus Marks:")
 
         local marks = { "star", "circle", "diamond", "triangle", "moon", "square", "cross", "skull" }
 
         local function SetRaidMarkButtonIcon(btn, markIndex)
             btn:SetText("")
-            local icon = btn:CreateTexture(nil, "ARTWORK")
-            icon:SetWidth(20)
-            icon:SetHeight(20)
-            icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
-            icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. markIndex)
+            local icon = btn:CreateTexture(nil, "OVERLAY")
+            icon:SetWidth(18)
+            icon:SetHeight(18)
+            icon:SetPoint("CENTER", btn, "CENTER", 0, 1)
+
+            if SetRaidTargetIconTexture then
+                SetRaidTargetIconTexture(icon, markIndex)
+            else
+                -- Vanilla stores all eight marks in a four-by-two texture atlas.
+                local col = math.mod(markIndex - 1, 4)
+                local row = math.floor((markIndex - 1) / 4)
+                icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+                icon:SetTexCoord(col * 0.25, (col + 1) * 0.25, row * 0.5, (row + 1) * 0.5)
+            end
+
+            btn.raidMarkIcon = icon
         end
 
         local ccLbl = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -1447,7 +1458,7 @@ btn:SetHeight(24)
         end
 
         local fLbl = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        fLbl:SetPoint("TOPLEFT", ccLbl, "BOTTOMLEFT", 0, -36)
+        fLbl:SetPoint("TOPLEFT", ccLbl, "BOTTOMLEFT", 0, -54)
         fLbl:SetText("Focus Mark (.partybot focusmark):")
 
         for idx, m in ipairs(marks) do
@@ -1464,8 +1475,8 @@ btn:SetHeight(24)
 
         local clearBtn = CreateFrame("Button", "PBClearMarksBtn", frame, "UIPanelButtonTemplate")
         clearBtn:SetWidth(120)
-clearBtn:SetHeight(24)
-        clearBtn:SetPoint("TOPLEFT", fLbl, "BOTTOMLEFT", 0, -36)
+        clearBtn:SetHeight(24)
+        clearBtn:SetPoint("TOPLEFT", fLbl, "BOTTOMLEFT", 0, -58)
         clearBtn:SetText("Clear All Marks")
         clearBtn:SetScript("OnClick", function()
             PartyBotUI_Command("clearmarks")
