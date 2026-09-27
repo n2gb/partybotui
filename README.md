@@ -1,6 +1,6 @@
 # PartyBotUI
 
-PartyBotUI v1.4.3 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
+PartyBotUI v1.4.4 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
@@ -37,7 +37,7 @@ PartyBotUI v1.4.3 is a World of Warcraft Vanilla 1.12.1 addon for servers runnin
 
 - Set Tank, Healer, DPS, Melee DPS, or Ranged DPS roles.
 - Pull or attack the current target, stop attacks, regroup bots, pause or resume AI, toggle AOE, and interact with a targeted game object.
-- Assign raid-target icons for crowd control and focus fire, or clear all bot marks.
+- Assign crowd-control and focus-fire targets with the actual in-game Star, Circle, Diamond, Triangle, Moon, Square, Cross, and Skull raid-target icons, or clear all bot marks.
 - Use the compact floating dock for Pull, Attack, Stop, Regroup, AOE, and quick access to the manager.
 
 ### Chat Filtering
@@ -76,4 +76,4 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 
 ## Release
 
-The addon version is 1.4.3. See [CHANGELOG.md](CHANGELOG.md) for its release history.
+The addon version is 1.4.4. See [CHANGELOG.md](CHANGELOG.md) for its release history.

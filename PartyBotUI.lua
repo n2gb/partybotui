@@ -1421,6 +1421,15 @@ btn:SetHeight(24)
 
         local marks = { "star", "circle", "diamond", "triangle", "moon", "square", "cross", "skull" }
 
+        local function SetRaidMarkButtonIcon(btn, markIndex)
+            btn:SetText("")
+            local icon = btn:CreateTexture(nil, "ARTWORK")
+            icon:SetWidth(20)
+            icon:SetHeight(20)
+            icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
+            icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. markIndex)
+        end
+
         local ccLbl = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         ccLbl:SetPoint("TOPLEFT", mHeader, "BOTTOMLEFT", 0, -8)
         ccLbl:SetText("CC Mark (.partybot ccmark):")
@@ -1430,7 +1439,7 @@ btn:SetHeight(24)
             btn:SetWidth(52)
             btn:SetHeight(22)
             btn:SetPoint("TOPLEFT", ccLbl, "BOTTOMLEFT", (idx - 1) * 56, -4)
-            btn:SetText(string.upper(string.sub(m, 1, 3)))
+            SetRaidMarkButtonIcon(btn, idx)
             btn.mark = m
             btn:SetScript("OnClick", function()
                 PartyBotUI_Command("ccmark " .. this.mark)
@@ -1442,11 +1451,11 @@ btn:SetHeight(24)
         fLbl:SetText("Focus Mark (.partybot focusmark):")
 
         for idx, m in ipairs(marks) do
-            local btn = CreateFrame("Button", "PBFoxusMarkBtn" .. idx, frame, "UIPanelButtonTemplate")
+            local btn = CreateFrame("Button", "PBFocusMarkBtn" .. idx, frame, "UIPanelButtonTemplate")
             btn:SetWidth(52)
             btn:SetHeight(22)
             btn:SetPoint("TOPLEFT", fLbl, "BOTTOMLEFT", (idx - 1) * 56, -4)
-            btn:SetText(string.upper(string.sub(m, 1, 3)))
+            SetRaidMarkButtonIcon(btn, idx)
             btn.mark = m
             btn:SetScript("OnClick", function()
                 PartyBotUI_Command("focusmark " .. this.mark)

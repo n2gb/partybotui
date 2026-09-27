@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.4
+
+- Replace the abbreviated text on crowd-control and focus-mark buttons with the matching in-game raid-target icon textures.
+- Map Star through Skull to `UI-RaidTargetingIcon_1` through `UI-RaidTargetingIcon_8`.
+
 ## 1.4.3
 
 - Limit the **Your Account Characters** roster to nine entries in a three-by-three grid.
