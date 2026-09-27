@@ -1,82 +1,79 @@
 # PartyBotUI
 
-**PartyBotUI** is a comprehensive World of Warcraft (Vanilla 1.12.1) client interface addon built for servers running the **vMaNGOS** PartyBot companion engine.
-
-It replaces raw chat slash commands with an authentic Blizzard-style management window, paperdoll character sheet, full bag inspection grid, floating combat HUD, and gear upgrade advisor.
-
----
+PartyBotUI v1.4.3 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
-### 1. Roster & Account Alts Manager
-* **Dynamic Alt Discovery:** Automatically queries the server (`.partybot alts`) to discover your account characters and presents up to nine of them in a balanced three-row roster layout.
-* **1-Click Alt Summoning:** Click any alt's name to summon them as an active partybot into your group (`.partybot load`).
-* **Hover Details:** Hover over any alt to view their level, race, class, and whether they are currently in your party.
-* **Manual Refresh:** Re-query the server anytime with the "Refresh" button.
-* **Quick-Add Class Roles:** One-click summoning for generic roles (`Tank`, `Healer`, `DPS`, `Warrior`, `Priest`, `Mage`, `Rogue`, `Druid`, `Hunter`).
-* **Party Slot Management:** Inspect active bots and dismiss them cleanly with one click (`.partybot remove`).
+### Roster
 
-### 2. Paperdoll Character Sheet (Multi-Bot)
-* **Equipment Inspection:** Live display of all 19 equipment slots for each active partybot with classic Vanilla slot frames and quality highlights.
-* **3D Standing Character Model:** Features a standing character model matching your bot's race, gender, and gear. Click and drag or use the arrow buttons to spin the model.
-* **Right-Click Unequip:** Right-click any equipped item on your bot to order them to unequip it into their bags (`.partybot unequip`).
-* **Direct Trade Access:** One-click button to open a direct trade window with the bot.
+![Roster tab showing active PartyBot slots, the account character grid, and quick-add controls](screenshots/roster.png)
 
-### 3. Bot Bags & Inventory Grid
-* **Live Bag Visualization:** Inspect your bot's 16-slot backpack and all 4 equipped container bags (up to 88 total inventory slots) in a larger Vanilla-style item grid.
-* **Icon-Only Bag Strip:** View all bags in one continuous grid with the backpack and equipped bag icons beneath it. The icons never filter inventory; no bag-number or slot-count tabs clutter the view.
-* **Bag Upgrades:** Drag an empty, larger bag from your inventory onto one of the bot's four bag icons, or right-click an empty, larger bag in the bot's inventory and then click the destination bag icon. The bot's bag contents move to the new bag; the old bag goes into the replacement bag's original slot. Player-sourced upgrades need one free bot backpack slot.
-* **1-Click Item Retrieval:** Left-click any item in your bot's inventory to order them to hand it over directly into your bags (`.partybot giveback`). The slot clears after the server confirms the transfer, and the addon refreshes the bag snapshot automatically.
+- Manage up to four active PartyBots, jump directly to a bot's character sheet, or dismiss a bot.
+- Discover account characters with `.partybot alts` and show up to nine characters in a 3x3 grid.
+- Summon an account character with one click. Hover a character for level, race, class, and party status.
+- Add generic role or class bots quickly: Tank, Healer, DPS, Warrior, Priest, Mage, Rogue, Druid, or Hunter.
 
-### 4. Tactics & Combat Commands
-* **Role Switcher:** Change bot combat roles on the fly (`Tank`, `Healer`, `DPS`, `Melee DPS`, `Ranged DPS`).
-* **Combat Flow:** Order your tank to `Pull`, command all bots to `Attack` or `Stop`, call bots to `Come To Me`, or freeze/unfreeze bot AI.
-* **AOE Toggle:** Safely toggle Area-of-Effect spells on or off to prevent unwanted pack pulls in tight dungeons.
-* **Raid Target Marks:** Set Crowd Control (CC) marks and Focus Fire target icons for your bots.
+### Character Sheet
 
-### 5. Floating Tactical Dock
-* A compact, draggable HUD positioned at the top of your screen for combat commands without keeping the main manager window open.
-* Includes quick buttons for `Pull`, `Atk`, `Stop`, `Regrp`, `AOE`, and toggling the main window (`PB`).
+![Character Sheet tab showing a selected bot, its model, stats, and equipment slots](screenshots/character-sheet.png)
 
-### 6. Tooltip Gear Upgrade Advisor
-* Automatically evaluates items in your bags and equipment against all active partybots.
-* Appends a clean upgrade notification at the bottom of standard item tooltips showing which bot would benefit most from the gear.
+- Switch among active bots and inspect each bot's level, race, class, health, power, 3D model, and 19 equipment slots.
+- Right-click equipped items to move them to the bot's bags, or drag items from the player inventory onto an equipment slot.
+- Open a trade directly with the selected bot or jump to that bot's bags.
 
----
+### Bot Bags
+
+![Bot Bags tab showing the continuous inventory grid, equipped bags, wallet, and transfer controls](screenshots/bot-bags.png)
+
+- Inspect the selected bot's backpack and four equipped bags in one continuous grid of up to 88 slots.
+- Left-click an item to retrieve it with `.partybot giveback`; the addon waits for server confirmation before clearing and refreshing the slot.
+- Right-click an item to equip it on the selected bot.
+- Upgrade one of the bot's four bag slots by dragging an empty, larger player bag onto it, or by selecting an eligible bag in the bot inventory and then choosing the destination slot.
+- View the bot wallet, deposit 1g or 5g, or retrieve all bot gold.
+
+### Tactics & Roles
+
+![Tactics and Roles tab showing combat roles, tactical commands, and raid-target controls](screenshots/tactics-and-roles.png)
+
+- Set Tank, Healer, DPS, Melee DPS, or Ranged DPS roles.
+- Pull or attack the current target, stop attacks, regroup bots, pause or resume AI, toggle AOE, and interact with a targeted game object.
+- Assign raid-target icons for crowd control and focus fire, or clear all bot marks.
+- Use the compact floating dock for Pull, Attack, Stop, Regroup, AOE, and quick access to the manager.
+
+### Chat Filtering
+
+PartyBotUI consumes its structured `[PB_*]` data messages and suppresses successful command output for five seconds after an addon-issued PartyBot command. Errors remain visible, including failed commands, invalid requests, full bags, and cannot-equip messages.
 
 ## Installation
 
-1. Download the latest pre-packaged **[`PartyBotUI.zip`](https://github.com/n2gb/partybotui/releases/latest/download/PartyBotUI.zip)** from GitHub Releases.
-2. Extract the archive directly into your World of Warcraft `Interface\AddOns\` directory:
+1. Download the latest [`PartyBotUI.zip`](https://github.com/n2gb/partybotui/releases/latest/download/PartyBotUI.zip).
+2. Extract it into the World of Warcraft addon directory so the final path is:
+
    ```text
    World of Warcraft\Interface\AddOns\PartyBotUI\
    ```
-   > [!IMPORTANT]
-   > The archive extracts directly as `PartyBotUI/`. Ensure the folder is placed in `Interface\AddOns\` matching `PartyBotUI.toc`.
-3. Launch WoW (or run `/console reloadui` if already in-game).
-4. Verify **PartyBotUI** is enabled in your character select **AddOns** menu.
 
----
+3. Launch World of Warcraft, or run `/console reloadui` if it is already open.
+4. Enable PartyBotUI in the character-selection AddOns menu.
 
 ## Slash Commands
 
 | Command | Action |
-| :--- | :--- |
-| `/pb` or `/partybot` | Toggle the main PartyBot Manager window |
-| `/pb dock` | Show or hide the floating tactical combat dock |
-| `/pb pull` | Order your Tank bot to pull your current target |
-| `/pb atk` or `/pb attack` | Order all bots to attack your target |
+| --- | --- |
+| `/pb` or `/partybot` | Toggle the PartyBot Manager |
+| `/pb dock` | Show or hide the floating tactical dock |
+| `/pb pull` | Order the Tank bot to pull the current target |
+| `/pb atk` or `/pb attack` | Order all bots to attack the current target |
 | `/pb stop` | Order all bots to stop attacking |
-| `/pb follow` or `/pb regrp` | Force bots to run to your coordinates |
-| `/pb aoe` | Toggle AOE spells on/off |
-| `/pb bags` | Query targeted bot's bags in chat |
-
----
+| `/pb follow` or `/pb regrp` | Call bots to the player's coordinates |
+| `/pb aoe` | Toggle bot AOE spells |
+| `/pb bags` | Query the targeted bot's bags |
 
 ## Compatibility
-* **Client:** World of Warcraft (Vanilla 1.12.1 / Build 5875)
-* **Server:** vMaNGOS (Vanilla mangos core)
 
-## Release Notes
+- Client: World of Warcraft Vanilla 1.12.1 (build 5875)
+- Server: vMaNGOS with the PartyBot system and PartyBotUI server messages/commands
 
-See [CHANGELOG.md](CHANGELOG.md) for version history. Version 1.4.3 balances the roster section spacing without increasing the PartyBot Manager window size.
+## Release
+
+The addon version is 1.4.3. See [CHANGELOG.md](CHANGELOG.md) for its release history.
