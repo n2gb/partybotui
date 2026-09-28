@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.6
+
+- Load each crowd-control and focus-mark button icon from Vanilla's complete `UI-RaidTargetingIcon_1` through `UI-RaidTargetingIcon_8` textures.
+- Use full texture coordinates so the raid-target artwork renders correctly on every mark button without relying on later-client texture helpers or atlas layouts.
+
 ## 1.4.5
 
 - Render crowd-control and focus marks through the native raid-target texture helper, with explicit coordinates for Vanilla's four-by-two icon atlas as a fallback.

@@ -1428,15 +1428,10 @@ function PartyBotUI_RenderTactics()
             icon:SetHeight(18)
             icon:SetPoint("CENTER", btn, "CENTER", 0, 1)
 
-            if SetRaidTargetIconTexture then
-                SetRaidTargetIconTexture(icon, markIndex)
-            else
-                -- Vanilla stores all eight marks in a four-by-two texture atlas.
-                local col = math.mod(markIndex - 1, 4)
-                local row = math.floor((markIndex - 1) / 4)
-                icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
-                icon:SetTexCoord(col * 0.25, (col + 1) * 0.25, row * 0.5, (row + 1) * 0.5)
-            end
+            -- Vanilla exposes each raid mark as a complete texture. Loading the
+            -- individual file avoids relying on later-client atlas helpers.
+            icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. markIndex)
+            icon:SetTexCoord(0, 1, 0, 1)
 
             btn.raidMarkIcon = icon
         end
