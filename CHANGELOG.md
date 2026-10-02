@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.0
+
+- Show the selected bot’s hearthstone bind area below the Character Sheet model. The existing `.partybot professions <name>` response now includes the server’s localized home-bind area name.
+
 ## 1.8.0
 
 - Replace Character Sheet mana/energy and unit tracking text with each bot’s two primary professions and current/maximum skill levels. The server supplies those values through `.partybot professions <name>`.

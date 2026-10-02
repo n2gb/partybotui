@@ -274,6 +274,13 @@ function PartyBotUI_ProcessPBMessage(msg)
         return
     end
 
+    local _, _, hearthBot, hearthArea, hearthName = string.find(
+        msg, "^%[PB_HEARTH%]%s+(%S+)%s+(%d+)%s+(.+)$")
+    if hearthBot and PartyBotUI_BotProfessions[hearthBot] then
+        PartyBotUI_BotProfessions[hearthBot].hearth = hearthName
+        return
+    end
+
     local _, _, endProf = string.find(msg, "^%[PB_PROF_END%]%s+(%S+)")
     if endProf and PartyBotUI_BotProfessions[endProf] then
         PartyBotUI_BotProfessions[endProf].fetchedAt = GetTime()
@@ -759,6 +766,11 @@ function PartyBotUI_RenderSheet()
         frame.statsText:SetWidth(620)
         frame.statsText:SetJustifyH("LEFT")
 
+        frame.hearthText = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+        frame.hearthText:SetPoint("BOTTOM", frame, "BOTTOM", 0, 82)
+        frame.hearthText:SetWidth(350)
+        frame.hearthText:SetJustifyH("CENTER")
+
         -- Create Paperdoll Equipment Slots
         frame.slots = {}
 
@@ -834,6 +846,7 @@ frame.viewBagsBtn:SetHeight(24)
     if not currentBot then
         frame.infoText:SetText("No partybot active in this slot.")
         frame.statsText:SetText("Summon a bot using the Roster tab.")
+        frame.hearthText:SetText("")
         for _, btn in pairs(frame.slots) do
             btn:Hide()
         end
@@ -869,6 +882,9 @@ frame.viewBagsBtn:SetHeight(24)
     frame.infoText:SetText(string.format("%s - Level %d %s %s", currentBot.name, currentBot.level, currentBot.race, currentBot.class))
     frame.statsText:SetText(string.format("Health: %d/%d  |  Professions: %s",
         hp, maxHp, PartyBotUI_ProfessionSummary(currentBot.name)))
+    local hearthName = professionData and professionData.fetchedAt
+        and (professionData.hearth or "Unknown") or "Loading..."
+    frame.hearthText:SetText("Hearthstone: " .. hearthName)
 
     local botEquip = PartyBotUI_BotEquip[currentBot.name] or {}
 
