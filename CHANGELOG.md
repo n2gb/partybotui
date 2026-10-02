@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.1
+
+- Fix the Notes tab crash on Vanilla 1.12 by using Blizzard's scrolling edit helper instead of the unavailable FontString:GetStringHeight method.
+
 ## 1.5.0
 
 - Add an account-wide Notes tab with a scrolling, multiline notepad. Changes are saved automatically through the addon's existing saved variables.

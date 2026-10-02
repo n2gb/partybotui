@@ -1596,19 +1596,12 @@ function PartyBotUI_RenderNotes()
         edit:SetJustifyV("TOP")
         scroll:SetScrollChild(edit)
 
-        local measure = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        measure:SetWidth(402)
-        measure:SetJustifyH("LEFT")
-        measure:Hide()
-
         edit:SetScript("OnTextChanged", function()
             local value = this:GetText() or ""
             if not frame.loadingNotes then
                 PartyBotUIDB.notes = value
             end
-            measure:SetText(value == "" and " " or value)
-            this:SetHeight(math.max(311, math.ceil(measure:GetStringHeight()) + 28))
-            scroll:UpdateScrollChildRect()
+            ScrollingEdit_OnTextChanged(scroll)
         end)
         edit:SetScript("OnCursorChanged", function()
             ScrollingEdit_OnCursorChanged(arg1, arg2, arg3, arg4)
