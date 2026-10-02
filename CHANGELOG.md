@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0
+
+- Add an account-wide Notes tab with a scrolling, multiline notepad. Changes are saved automatically through the addon's existing saved variables.
+- Fit five navigation buttons inside the existing manager window.
+
 ## 1.4.6
 
 - Load each crowd-control and focus-mark button icon from Vanilla's complete `UI-RaidTargetingIcon_1` through `UI-RaidTargetingIcon_8` textures.

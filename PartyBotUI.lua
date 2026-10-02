@@ -379,13 +379,14 @@ end
 
 local PB_NAV_TITLES = {
     [1] = "Roster",
-    [2] = "Character Sheet",
+    [2] = "Character",
     [3] = "Bot Bags",
-    [4] = "Tactics & Roles"
+    [4] = "Tactics",
+    [5] = "Notes"
 }
 
 function PartyBotUI_UpdateNavButtons(activeTabIndex)
-    for i = 1, 4 do
+    for i = 1, 5 do
         local btn = getglobal("PartyBotMainFrameTab" .. i)
         if btn then
             local text = getglobal(btn:GetName() .. "Text")
@@ -448,6 +449,7 @@ function PartyBotUI_SelectTab(tabIndex)
     PartyBotSheetTabFrame:Hide()
     PartyBotBagsTabFrame:Hide()
     PartyBotTacticsTabFrame:Hide()
+    PartyBotNotesTabFrame:Hide()
 
     if tabIndex == 1 then
         PartyBotRosterTabFrame:Show()
@@ -473,6 +475,9 @@ function PartyBotUI_SelectTab(tabIndex)
     elseif tabIndex == 4 then
         PartyBotTacticsTabFrame:Show()
         PartyBotUI_RenderTactics()
+    elseif tabIndex == 5 then
+        PartyBotNotesTabFrame:Show()
+        PartyBotUI_RenderNotes()
     end
 end
 
@@ -1541,6 +1546,89 @@ GameTooltip.SetInventoryItem = function(self, unit, slot)
         pcall(PartyBotUI_AppendUpgradeTooltip, self, link)
     end
     return val
+end
+
+-- ============================================================================
+-- TAB 5: Notes
+-- ============================================================================
+
+function PartyBotUI_RenderNotes()
+    local frame = PartyBotNotesTabFrame
+    if not frame.initialized then
+        frame.initialized = true
+
+        local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        title:SetPoint("TOPLEFT", frame, "TOPLEFT", 40, -85)
+        title:SetText("Party Notes")
+
+        local help = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        help:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+        help:SetText("Plans, reminders, loot goals, or anything your party needs.")
+
+        local panel = CreateFrame("Frame", nil, frame)
+        panel:SetPoint("TOPLEFT", frame, "TOPLEFT", 35, -130)
+        panel:SetWidth(460)
+        panel:SetHeight(335)
+        panel:SetBackdrop({
+            bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true, tileSize = 16, edgeSize = 14,
+            insets = { left = 4, right = 4, top = 4, bottom = 4 }
+        })
+        panel:SetBackdropColor(0.09, 0.07, 0.04, 0.95)
+        panel:SetBackdropBorderColor(0.58, 0.45, 0.25, 1)
+
+        local scroll = CreateFrame("ScrollFrame", "PartyBotNotesScrollFrame", panel, "UIPanelScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", panel, "TOPLEFT", 12, -12)
+        scroll:SetWidth(411)
+        scroll:SetHeight(311)
+
+        local edit = CreateFrame("EditBox", "PartyBotNotesEditBox", scroll)
+        edit:SetWidth(402)
+        edit:SetHeight(311)
+        edit:SetMultiLine(true)
+        edit:SetAutoFocus(false)
+        edit:EnableMouse(true)
+        edit:SetMaxLetters(20000)
+        edit:SetFontObject(GameFontHighlight)
+        edit:SetTextColor(1, 0.93, 0.74)
+        edit:SetJustifyH("LEFT")
+        edit:SetJustifyV("TOP")
+        scroll:SetScrollChild(edit)
+
+        local measure = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        measure:SetWidth(402)
+        measure:SetJustifyH("LEFT")
+        measure:Hide()
+
+        edit:SetScript("OnTextChanged", function()
+            local value = this:GetText() or ""
+            if not frame.loadingNotes then
+                PartyBotUIDB.notes = value
+            end
+            measure:SetText(value == "" and " " or value)
+            this:SetHeight(math.max(311, math.ceil(measure:GetStringHeight()) + 28))
+            scroll:UpdateScrollChildRect()
+        end)
+        edit:SetScript("OnCursorChanged", function()
+            ScrollingEdit_OnCursorChanged(arg1, arg2, arg3, arg4)
+        end)
+        edit:SetScript("OnUpdate", function() ScrollingEdit_OnUpdate(scroll) end)
+        edit:SetScript("OnEscapePressed", function() this:ClearFocus() end)
+        frame.edit = edit
+
+        local saved = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        saved:SetPoint("TOPLEFT", panel, "BOTTOMLEFT", 5, -12)
+        saved:SetText("Auto-saved for this account on logout or UI reload.")
+    end
+
+    -- Keep the cursor position if a roster event rerenders the open Notes tab.
+    if not frame.notesLoaded then
+        frame.loadingNotes = true
+        frame.edit:SetText(PartyBotUIDB.notes or "")
+        frame.loadingNotes = false
+        frame.notesLoaded = true
+    end
 end
 
 -- ============================================================================
