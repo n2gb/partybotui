@@ -10,6 +10,8 @@ local PartyBotUI_ActiveBots = {}
 local PartyBotUI_BotEquip = {}
 local PartyBotUI_BotBags = {}
 local PartyBotUI_BotMoney = {}
+local PartyBotUI_BotProfessions = {}
+local PartyBotUI_ProfessionRequests = {}
 local PartyBotUI_PendingGivebacks = {}
 local PartyBotUI_PendingBotBagUpgrade = nil
 local PartyBotUI_SelectedBot = 1
@@ -66,6 +68,12 @@ local PB_RACE_NAMES = {
 local PB_CLASS_NAMES = {
     [1] = "Warrior", [2] = "Paladin", [3] = "Hunter", [4] = "Rogue",
     [5] = "Priest", [7] = "Shaman", [8] = "Mage", [9] = "Warlock", [11] = "Druid"
+}
+
+local PB_PRIMARY_PROFESSION_NAMES = {
+    [164] = "Blacksmithing", [165] = "Leatherworking", [171] = "Alchemy",
+    [182] = "Herbalism", [186] = "Mining", [197] = "Tailoring",
+    [202] = "Engineering", [333] = "Enchanting", [393] = "Skinning"
 }
 
 -- ============================================================================
@@ -249,6 +257,34 @@ end
 
 function PartyBotUI_ProcessPBMessage(msg)
     if not msg then return end
+
+    -- Primary professions are supplied by the server for the selected PartyBot.
+    local _, _, startProf = string.find(msg, "^%[PB_PROF_START%]%s+(%S+)")
+    if startProf then
+        PartyBotUI_BotProfessions[startProf] = { entries = {} }
+        return
+    end
+
+    local _, _, profBot, skillId, skillValue, skillMax = string.find(
+        msg, "^%[PB_PROF%]%s+(%S+)%s+(%d+)%s+(%d+)%s+(%d+)")
+    if profBot and PartyBotUI_BotProfessions[profBot] then
+        table.insert(PartyBotUI_BotProfessions[profBot].entries, {
+            id = tonumber(skillId), value = tonumber(skillValue), maximum = tonumber(skillMax)
+        })
+        return
+    end
+
+    local _, _, endProf = string.find(msg, "^%[PB_PROF_END%]%s+(%S+)")
+    if endProf and PartyBotUI_BotProfessions[endProf] then
+        PartyBotUI_BotProfessions[endProf].fetchedAt = GetTime()
+        PartyBotUI_ProfessionRequests[endProf] = nil
+        local selected = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+        if PartyBotMainFrame:IsShown() and PartyBotUI_CurrentTab == 2
+            and selected and selected.name == endProf then
+            PartyBotUI_RenderSheet()
+        end
+        return
+    end
 
     -- 1. Start of bag listing: [PB_BAGS_START] <botName>
     local _, _, startBot = string.find(msg, "^%[PB_BAGS_START%]%s+(%S+)")
@@ -676,6 +712,23 @@ end
 -- TAB 2: Multi-Bot Character Sheet (Paperdoll)
 -- ============================================================================
 
+local function PartyBotUI_ProfessionSummary(botName)
+    local data = PartyBotUI_BotProfessions[botName]
+    if not data or not data.fetchedAt then
+        return "Loading..."
+    end
+    if table.getn(data.entries) == 0 then
+        return "None learned"
+    end
+
+    local labels = {}
+    for _, profession in ipairs(data.entries) do
+        local name = PB_PRIMARY_PROFESSION_NAMES[profession.id] or ("Skill " .. profession.id)
+        table.insert(labels, string.format("%s %d/%d", name, profession.value, profession.maximum))
+    end
+    return table.concat(labels, ", ")
+end
+
 function PartyBotUI_RenderSheet()
     local frame = PartyBotSheetTabFrame
 
@@ -701,8 +754,10 @@ function PartyBotUI_RenderSheet()
         frame.infoText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
         frame.infoText:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -96)
 
-        frame.statsText = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        frame.statsText = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
         frame.statsText:SetPoint("TOPLEFT", frame.infoText, "BOTTOMLEFT", 0, -3)
+        frame.statsText:SetWidth(620)
+        frame.statsText:SetJustifyH("LEFT")
 
         -- Create Paperdoll Equipment Slots
         frame.slots = {}
@@ -802,11 +857,18 @@ frame.viewBagsBtn:SetHeight(24)
 
     local hp = UnitHealth(currentBot.unit)
     local maxHp = UnitHealthMax(currentBot.unit)
-    local mana = UnitMana(currentBot.unit)
-    local maxMana = UnitManaMax(currentBot.unit)
+    local professionData = PartyBotUI_BotProfessions[currentBot.name]
+    local requestedAt = PartyBotUI_ProfessionRequests[currentBot.name]
+    local now = GetTime()
+    if (not professionData or not professionData.fetchedAt or now - professionData.fetchedAt > 60)
+        and (not requestedAt or now - requestedAt > 5) then
+        PartyBotUI_ProfessionRequests[currentBot.name] = now
+        PartyBotUI_Command("professions " .. currentBot.name)
+    end
 
     frame.infoText:SetText(string.format("%s - Level %d %s %s", currentBot.name, currentBot.level, currentBot.race, currentBot.class))
-    frame.statsText:SetText(string.format("Health: %d/%d  |  Mana/Energy: %d/%d  |  Unit: %s", hp, maxHp, mana, maxMana, currentBot.unit))
+    frame.statsText:SetText(string.format("Health: %d/%d  |  Professions: %s",
+        hp, maxHp, PartyBotUI_ProfessionSummary(currentBot.name)))
 
     local botEquip = PartyBotUI_BotEquip[currentBot.name] or {}
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.0
+
+- Replace Character Sheet mana/energy and unit tracking text with each bot’s two primary professions and current/maximum skill levels. The server supplies those values through `.partybot professions <name>`.
+
 ## 1.7.0
 
 - Make the Notes edit box focus when the tab opens or the notepad is clicked, and anchor it explicitly inside its scroll frame.
