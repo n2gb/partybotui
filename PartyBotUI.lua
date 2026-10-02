@@ -118,6 +118,16 @@ function PartyBotUI_ToggleMain()
     end
 end
 
+function PartyBotUI_ToggleDock()
+    if PartyBotDockFrame:IsShown() then
+        PartyBotDockFrame:Hide()
+        PartyBotUIDB.dockVisible = false
+    else
+        PartyBotDockFrame:Show()
+        PartyBotUIDB.dockVisible = true
+    end
+end
+
 -- ============================================================================
 -- Roster & Active Bots Detection
 -- ============================================================================
@@ -437,7 +447,7 @@ function PartyBotUI_UpdateNavButtons(activeTabIndex)
     end
 end
 
-function PartyBotUI_SelectTab(tabIndex)
+function PartyBotUI_SelectTab(tabIndex, focusNotes)
     PartyBotUI_CurrentTab = tabIndex
     PartyBotUI_UpdateNavButtons(tabIndex)
     PartyBotMainFrame:SetWidth(tabIndex == 3 and 700 or 530)
@@ -473,6 +483,7 @@ function PartyBotUI_SelectTab(tabIndex)
     elseif tabIndex == 4 then
         PartyBotNotesTabFrame:Show()
         PartyBotUI_RenderNotes()
+        if focusNotes then PartyBotNotesTabFrame.edit:SetFocus() end
     end
 end
 
@@ -1465,6 +1476,31 @@ function PartyBotUI_InitDock()
     dock.initialized = true
 end
 
+function PartyBotUI_InitMinimapButton()
+    if PartyBotUIMinimapButton then return end
+
+    local button = CreateFrame("Button", "PartyBotUIMinimapButton", Minimap, "UIPanelButtonTemplate")
+    button:SetWidth(34)
+    button:SetHeight(26)
+    button:SetPoint("BOTTOMLEFT", Minimap, "BOTTOMLEFT", -7, -7)
+    button:SetFrameLevel(Minimap:GetFrameLevel() + 8)
+    button:SetText("PB")
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:SetScript("OnClick", function()
+        if arg1 == "RightButton" then
+            PartyBotUI_ToggleMain()
+        else
+            PartyBotUI_ToggleDock()
+        end
+    end)
+    button:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(this, "ANCHOR_LEFT")
+        GameTooltip:SetText("PartyBot: left-click dock, right-click manager")
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
 -- ============================================================================
 -- Tooltip Gear Upgrade Advisor
 -- ============================================================================
@@ -1530,7 +1566,7 @@ GameTooltip.SetInventoryItem = function(self, unit, slot)
 end
 
 -- ============================================================================
--- TAB 5: Notes
+-- TAB 4: Notes
 -- ============================================================================
 
 function PartyBotUI_RenderNotes()
@@ -1565,6 +1601,7 @@ function PartyBotUI_RenderNotes()
         scroll:SetHeight(311)
 
         local edit = CreateFrame("EditBox", "PartyBotNotesEditBox", scroll)
+        edit:SetPoint("TOPLEFT", scroll, "TOPLEFT", 0, 0)
         edit:SetWidth(402)
         edit:SetHeight(311)
         edit:SetMultiLine(true)
@@ -1576,6 +1613,11 @@ function PartyBotUI_RenderNotes()
         edit:SetJustifyH("LEFT")
         edit:SetJustifyV("TOP")
         scroll:SetScrollChild(edit)
+        scroll:EnableMouse(true)
+        scroll:SetScript("OnMouseDown", function() edit:SetFocus() end)
+        panel:EnableMouse(true)
+        panel:SetScript("OnMouseDown", function() edit:SetFocus() end)
+        edit:SetScript("OnMouseDown", function() this:SetFocus() end)
 
         edit:SetScript("OnTextChanged", function()
             local value = this:GetText() or ""
@@ -1619,7 +1661,10 @@ eventFrame:SetScript("OnEvent", function()
     if event == "VARIABLES_LOADED" then
         PartyBotUIDB = PartyBotUIDB or {}
         PartyBotUIDB.accountAlts = PartyBotUIDB.accountAlts or {}
+        if PartyBotUIDB.dockVisible == nil then PartyBotUIDB.dockVisible = true end
         PartyBotUI_InitDock()
+        PartyBotUI_InitMinimapButton()
+        if PartyBotUIDB.dockVisible == false then PartyBotDockFrame:Hide() end
         PartyBotUI_UpdateNavButtons(1)
         PartyBotUI_Command("alts")
     elseif event == "PARTY_MEMBERS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
@@ -1649,11 +1694,7 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
     if msg == "" or msg == "ui" then
         PartyBotUI_ToggleMain()
     elseif msg == "dock" then
-        if PartyBotDockFrame:IsShown() then
-            PartyBotDockFrame:Hide()
-        else
-            PartyBotDockFrame:Show()
-        end
+        PartyBotUI_ToggleDock()
     elseif msg == "pull" then
         PartyBotUI_Command("pull")
     elseif msg == "attack" or msg == "atk" then

@@ -1,6 +1,6 @@
 # PartyBotUI
 
-PartyBotUI v1.6.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
+PartyBotUI v1.7.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
@@ -37,13 +37,13 @@ PartyBotUI v1.6.0 is a World of Warcraft Vanilla 1.12.1 addon for servers runnin
 - First row: Pull, Attack, Stop, Regroup, Pause, Resume, AOE, Object, and PB (open manager).
 - Second row: Tank, Healer, DPS, Melee, Ranged, CC Mark, Focus, and Clear. Roles apply to the targeted PartyBot.
 - CC Mark and Focus open a compact eight-choice picker. The buttons use readable mark abbreviations (Sta through Sku) and full-name hover tips, so the controls remain usable even when a Vanilla client lacks raid-mark artwork.
-- The dock still shows the active bot count, can be dragged, and can be hidden or shown with /pb dock.
+- The dock still shows the active bot count and can be dragged. Toggle it with the PB minimap button or /pb dock; that visibility setting survives a UI reload. Right-click the minimap button to open the manager.
 
 ### Notes
 
 - Keep one shared notepad for party plans, reminders, and loot goals across all characters on the account.
 - Changes update the addon's saved variables as you type and persist when you log out or reload the UI.
-- Scroll through longer notes in the Notes tab; up to 20,000 characters are supported.
+- Click the Notes tab or inside the notepad to focus it and type. Scroll through longer notes; up to 20,000 characters are supported.
 
 ### Chat Filtering
 
@@ -81,4 +81,4 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 
 ## Release
 
-The addon version is 1.6.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.
+The addon version is 1.7.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.

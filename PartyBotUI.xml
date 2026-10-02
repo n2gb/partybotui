@@ -335,7 +335,7 @@
                 </Anchors>
                 <Scripts>
                     <OnClick>
-                        PartyBotUI_SelectTab(4);
+                        PartyBotUI_SelectTab(4, true);
                     </OnClick>
                 </Scripts>
             </Button>

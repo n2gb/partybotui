@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.0
+
+- Make the Notes edit box focus when the tab opens or the notepad is clicked, and anchor it explicitly inside its scroll frame.
+- Add a PB minimap button: left-click toggles the dock, right-click opens the manager. Dock visibility persists through UI reloads and is shared with /pb dock.
+
 ## 1.6.0
 
 - Move every Tactics and Roles control into a two-row, movable dock and remove the redundant Tactics tab.
