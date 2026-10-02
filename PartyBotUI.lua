@@ -76,6 +76,14 @@ local PB_PRIMARY_PROFESSION_NAMES = {
     [202] = "Engineering", [333] = "Enchanting", [393] = "Skinning"
 }
 
+local PB_CLASS_ICON_COORDS = {
+    WARRIOR = {0, 0.25, 0, 0.25}, MAGE = {0.25, 0.49609375, 0, 0.25},
+    ROGUE = {0.49609375, 0.7421875, 0, 0.25}, DRUID = {0.7421875, 0.98828125, 0, 0.25},
+    HUNTER = {0, 0.25, 0.25, 0.5}, SHAMAN = {0.25, 0.49609375, 0.25, 0.5},
+    PRIEST = {0.49609375, 0.7421875, 0.25, 0.5}, WARLOCK = {0.7421875, 0.98828125, 0.25, 0.5},
+    PALADIN = {0, 0.25, 0.5, 0.75}
+}
+
 -- ============================================================================
 -- Utility & Command Functions
 -- ============================================================================
@@ -758,18 +766,21 @@ function PartyBotUI_RenderSheet()
         end
 
         -- Header Information
+        frame.classIcon = frame:CreateTexture(nil, "ARTWORK")
+        frame.classIcon:SetWidth(20)
+        frame.classIcon:SetHeight(20)
+        frame.classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -96)
+        frame.classIcon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes")
+
         frame.infoText = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
-        frame.infoText:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -96)
+        frame.infoText:SetPoint("LEFT", frame.classIcon, "RIGHT", 6, 0)
+        frame.infoText:SetWidth(440)
+        frame.infoText:SetJustifyH("LEFT")
 
         frame.statsText = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-        frame.statsText:SetPoint("TOPLEFT", frame.infoText, "BOTTOMLEFT", 0, -3)
-        frame.statsText:SetWidth(620)
+        frame.statsText:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -119)
+        frame.statsText:SetWidth(470)
         frame.statsText:SetJustifyH("LEFT")
-
-        frame.hearthText = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-        frame.hearthText:SetPoint("BOTTOM", frame, "BOTTOM", 0, 82)
-        frame.hearthText:SetWidth(350)
-        frame.hearthText:SetJustifyH("CENTER")
 
         -- Create Paperdoll Equipment Slots
         frame.slots = {}
@@ -844,9 +855,9 @@ frame.viewBagsBtn:SetHeight(24)
 
     local currentBot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
     if not currentBot then
+        frame.classIcon:Hide()
         frame.infoText:SetText("No partybot active in this slot.")
         frame.statsText:SetText("Summon a bot using the Roster tab.")
-        frame.hearthText:SetText("")
         for _, btn in pairs(frame.slots) do
             btn:Hide()
         end
@@ -879,12 +890,19 @@ frame.viewBagsBtn:SetHeight(24)
         PartyBotUI_Command("professions " .. currentBot.name)
     end
 
-    frame.infoText:SetText(string.format("%s - Level %d %s %s", currentBot.name, currentBot.level, currentBot.race, currentBot.class))
-    frame.statsText:SetText(string.format("Health: %d/%d  |  Professions: %s",
-        hp, maxHp, PartyBotUI_ProfessionSummary(currentBot.name)))
+    local classCoords = PB_CLASS_ICON_COORDS[currentBot.class]
+    if classCoords then
+        frame.classIcon:SetTexCoord(classCoords[1], classCoords[2], classCoords[3], classCoords[4])
+        frame.classIcon:Show()
+    else
+        frame.classIcon:Hide()
+    end
     local hearthName = professionData and professionData.fetchedAt
         and (professionData.hearth or "Unknown") or "Loading..."
-    frame.hearthText:SetText("Hearthstone: " .. hearthName)
+    frame.infoText:SetText(string.format("%s - Level %d - Hearthstone: %s",
+        currentBot.name, currentBot.level, hearthName))
+    frame.statsText:SetText(string.format("Health: %d/%d  |  %s",
+        hp, maxHp, PartyBotUI_ProfessionSummary(currentBot.name)))
 
     local botEquip = PartyBotUI_BotEquip[currentBot.name] or {}
 

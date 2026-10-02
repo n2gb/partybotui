@@ -360,48 +360,6 @@
                                 </Offset>
                             </Anchor>
                         </Anchors>
-                        <Frames>
-                            <!-- Rotate Left Button -->
-                            <Button name="PartyBotModelRotateLeftBtn" inherits="UIPanelButtonTemplate" text="&lt;">
-                                <Size>
-                                    <AbsDimension x="26" y="24"/>
-                                </Size>
-                                <Anchors>
-                                    <Anchor point="BOTTOMLEFT">
-                                        <Offset>
-                                            <AbsDimension x="10" y="10"/>
-                                        </Offset>
-                                    </Anchor>
-                                </Anchors>
-                                <Scripts>
-                                    <OnClick>
-                                        local m = PartyBotCharacterModel;
-                                        m.rotation = (m.rotation or 0) - 0.2;
-                                        m:SetRotation(m.rotation);
-                                    </OnClick>
-                                </Scripts>
-                            </Button>
-                            <!-- Rotate Right Button -->
-                            <Button name="PartyBotModelRotateRightBtn" inherits="UIPanelButtonTemplate" text="&gt;">
-                                <Size>
-                                    <AbsDimension x="26" y="24"/>
-                                </Size>
-                                <Anchors>
-                                    <Anchor point="BOTTOMRIGHT">
-                                        <Offset>
-                                            <AbsDimension x="-10" y="10"/>
-                                        </Offset>
-                                    </Anchor>
-                                </Anchors>
-                                <Scripts>
-                                    <OnClick>
-                                        local m = PartyBotCharacterModel;
-                                        m.rotation = (m.rotation or 0) + 0.2;
-                                        m:SetRotation(m.rotation);
-                                    </OnClick>
-                                </Scripts>
-                            </Button>
-                        </Frames>
                         <Scripts>
                             <OnLoad>
                                 this.rotation = 0;

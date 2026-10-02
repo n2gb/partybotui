@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.1
+
+- Move the Hearthstone bind area into the top Character Sheet line, beside the bot name and level. Replace race/class text with the class icon before the name.
+- Remove the Professions label from the health line and remove the two model rotation arrows; dragging the model still rotates it.
+
 ## 1.9.0
 
 - Show the selected bot’s hearthstone bind area below the Character Sheet model. The existing `.partybot professions <name>` response now includes the server’s localized home-bind area name.

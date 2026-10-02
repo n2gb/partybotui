@@ -1,6 +1,6 @@
 # PartyBotUI
 
-PartyBotUI v1.9.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
+PartyBotUI v1.9.1 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
@@ -17,7 +17,7 @@ PartyBotUI v1.9.0 is a World of Warcraft Vanilla 1.12.1 addon for servers runnin
 
 ![Character Sheet tab showing a selected bot, its model, stats, and equipment slots](screenshots/character-sheet.png)
 
-- Switch among active bots and inspect each bot's level, race, class, health, primary profession levels, hearthstone bind location, 3D model, and 19 equipment slots.
+- Switch among active bots and inspect each bot's level, class icon, health, primary profession levels, hearthstone bind location, 3D model, and 19 equipment slots.
 - Right-click equipped items to move them to the bot's bags, or drag items from the player inventory onto an equipment slot.
 - Open a trade directly with the selected bot or jump to that bot's bags.
 
@@ -81,4 +81,4 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 
 ## Release
 
-The addon version is 1.9.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.
+The addon version is 1.9.1. See [CHANGELOG.md](CHANGELOG.md) for its release history.
