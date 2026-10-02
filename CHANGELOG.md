@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0
+
+- Move every Tactics and Roles control into a two-row, movable dock and remove the redundant Tactics tab.
+- Add compact CC and Focus mark pickers with visible text labels and full-name tooltips, plus a Clear button.
+- Keep Roster, Character Sheet, Bot Bags, and Notes as the four manager tabs.
+
 ## 1.5.1
 
 - Fix the Notes tab crash on Vanilla 1.12 by using Blizzard's scrolling edit helper instead of the unavailable FontString:GetStringHeight method.

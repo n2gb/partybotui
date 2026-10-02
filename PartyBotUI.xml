@@ -125,7 +125,7 @@
     <!-- Template for Top Menu Navigation Buttons -->
     <Button name="PartyBotNavButtonTemplate" virtual="true">
         <Size>
-            <AbsDimension x="94" y="24"/>
+            <AbsDimension x="118" y="24"/>
         </Size>
         <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
             <EdgeSize>
@@ -142,7 +142,7 @@
             <Layer level="OVERLAY">
                 <Texture name="$parentActiveIndicator" hidden="true">
                     <Size>
-                        <AbsDimension x="86" y="2"/>
+                        <AbsDimension x="110" y="2"/>
                     </Size>
                     <Anchors>
                         <Anchor point="BOTTOM">
@@ -183,10 +183,10 @@
         </HighlightTexture>
     </Button>
 
-    <!-- Compact Floating Tactical Dock -->
+    <!-- Two-row tactical dock. Buttons and mark picker are created by Lua. -->
     <Frame name="PartyBotDockFrame" parent="UIParent" movable="true" enableMouse="true" hidden="false">
         <Size>
-            <AbsDimension x="310" y="44"/>
+            <AbsDimension x="660" y="78"/>
         </Size>
         <Anchors>
             <Anchor point="TOP" relativeTo="UIParent" relativePoint="TOP">
@@ -196,155 +196,28 @@
             </Anchor>
         </Anchors>
         <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
-            <EdgeSize>
-                <AbsValue val="14"/>
-            </EdgeSize>
-            <TileSize>
-                <AbsValue val="14"/>
-            </TileSize>
-            <BackgroundInsets>
-                <AbsInset left="3" right="3" top="3" bottom="3"/>
-            </BackgroundInsets>
+            <EdgeSize><AbsValue val="14"/></EdgeSize>
+            <TileSize><AbsValue val="14"/></TileSize>
+            <BackgroundInsets><AbsInset left="3" right="3" top="3" bottom="3"/></BackgroundInsets>
         </Backdrop>
         <Layers>
             <Layer level="ARTWORK">
                 <FontString name="PartyBotDockCountText" inherits="GameFontNormalSmall" text="Bots: 0/4">
                     <Anchors>
-                        <Anchor point="LEFT">
-                            <Offset>
-                                <AbsDimension x="8" y="0"/>
-                            </Offset>
+                        <Anchor point="BOTTOMRIGHT">
+                            <Offset><AbsDimension x="-10" y="13"/></Offset>
                         </Anchor>
                     </Anchors>
                 </FontString>
             </Layer>
         </Layers>
-        <Frames>
-            <!-- Pull Button -->
-            <Button name="PartyBotDockPullBtn" inherits="UIPanelButtonTemplate" text="Pull">
-                <Size>
-                    <AbsDimension x="42" y="24"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="LEFT" relativeTo="PartyBotDockCountText" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="6" y="0"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        PartyBotUI_Command("pull");
-                    </OnClick>
-                </Scripts>
-            </Button>
-
-            <!-- Attack Button -->
-            <Button name="PartyBotDockAttackBtn" inherits="UIPanelButtonTemplate" text="Atk">
-                <Size>
-                    <AbsDimension x="36" y="24"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="LEFT" relativeTo="PartyBotDockPullBtn" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="2" y="0"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        PartyBotUI_Command("attackstart");
-                    </OnClick>
-                </Scripts>
-            </Button>
-
-            <!-- Stop Button -->
-            <Button name="PartyBotDockStopBtn" inherits="UIPanelButtonTemplate" text="Stop">
-                <Size>
-                    <AbsDimension x="38" y="24"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="LEFT" relativeTo="PartyBotDockAttackBtn" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="2" y="0"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        PartyBotUI_Command("attackstop");
-                    </OnClick>
-                </Scripts>
-            </Button>
-
-            <!-- Regroup / ComeToMe Button -->
-            <Button name="PartyBotDockComeBtn" inherits="UIPanelButtonTemplate" text="Regrp">
-                <Size>
-                    <AbsDimension x="44" y="24"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="LEFT" relativeTo="PartyBotDockStopBtn" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="2" y="0"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        PartyBotUI_Command("cometome");
-                    </OnClick>
-                </Scripts>
-            </Button>
-
-            <!-- AOE Toggle Button -->
-            <Button name="PartyBotDockAOEBtn" inherits="UIPanelButtonTemplate" text="AOE">
-                <Size>
-                    <AbsDimension x="38" y="24"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="LEFT" relativeTo="PartyBotDockComeBtn" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="2" y="0"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        PartyBotUI_ToggleAOE();
-                    </OnClick>
-                </Scripts>
-            </Button>
-
-            <!-- Open Main Window Button -->
-            <Button name="PartyBotDockOpenBtn" inherits="UIPanelButtonTemplate" text="PB">
-                <Size>
-                    <AbsDimension x="30" y="24"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="LEFT" relativeTo="PartyBotDockAOEBtn" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="4" y="0"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        PartyBotUI_ToggleMain();
-                    </OnClick>
-                </Scripts>
-            </Button>
-        </Frames>
         <Scripts>
             <OnLoad>
                 this:RegisterForDrag("LeftButton");
                 this:SetBackdropColor(0, 0, 0, 0.75);
             </OnLoad>
-            <OnDragStart>
-                this:StartMoving();
-            </OnDragStart>
-            <OnDragStop>
-                this:StopMovingOrSizing();
-            </OnDragStop>
+            <OnDragStart>this:StartMoving();</OnDragStart>
+            <OnDragStop>this:StopMovingOrSizing();</OnDragStop>
         </Scripts>
     </Frame>
 
@@ -424,7 +297,7 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="PartyBotMainFrameTab2" inherits="PartyBotNavButtonTemplate" text="Character" id="2">
+            <Button name="PartyBotMainFrameTab2" inherits="PartyBotNavButtonTemplate" text="Character Sheet" id="2">
                 <Anchors>
                     <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab1" relativePoint="RIGHT">
                         <Offset>
@@ -452,7 +325,7 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="PartyBotMainFrameTab4" inherits="PartyBotNavButtonTemplate" text="Tactics" id="4">
+            <Button name="PartyBotMainFrameTab4" inherits="PartyBotNavButtonTemplate" text="Notes" id="4">
                 <Anchors>
                     <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab3" relativePoint="RIGHT">
                         <Offset>
@@ -463,21 +336,6 @@
                 <Scripts>
                     <OnClick>
                         PartyBotUI_SelectTab(4);
-                    </OnClick>
-                </Scripts>
-            </Button>
-
-            <Button name="PartyBotMainFrameTab5" inherits="PartyBotNavButtonTemplate" text="Notes" id="5">
-                <Anchors>
-                    <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab4" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="3" y="0"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        PartyBotUI_SelectTab(5);
                     </OnClick>
                 </Scripts>
             </Button>
@@ -609,12 +467,7 @@
                 </Frames>
             </Frame>
 
-            <!-- TAB 4: TACTICS & COMMANDS -->
-            <Frame name="PartyBotTacticsTabFrame" setAllPoints="true" hidden="true">
-                <!-- Tactical controls defined dynamically -->
-            </Frame>
-
-            <!-- TAB 5: ACCOUNT-WIDE NOTES -->
+            <!-- TAB 4: ACCOUNT-WIDE NOTES -->
             <Frame name="PartyBotNotesTabFrame" setAllPoints="true" hidden="true">
                 <!-- Scrolling notepad created by Lua on first visit -->
             </Frame>

@@ -1,6 +1,6 @@
 # PartyBotUI
 
-PartyBotUI v1.5.1 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
+PartyBotUI v1.6.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
@@ -31,15 +31,13 @@ PartyBotUI v1.5.1 is a World of Warcraft Vanilla 1.12.1 addon for servers runnin
 - Upgrade one of the bot's four bag slots by dragging an empty, larger player bag onto it, or by selecting an eligible bag in the bot inventory and then choosing the destination slot.
 - View the bot wallet, deposit 1g or 5g, or retrieve all bot gold.
 
-### Tactics & Roles
+### Tactical Dock
 
-![Tactics and Roles tab showing combat roles, tactical commands, and raid-target controls](screenshots/tactics-and-roles.png)
-
-- Set Tank, Healer, DPS, Melee DPS, or Ranged DPS roles.
-- Pull or attack the current target, stop attacks, regroup bots, pause or resume AI, toggle AOE, and interact with a targeted game object.
-- Assign crowd-control and focus-fire targets with the native in-game Star, Circle, Diamond, Triangle, Moon, Square, Cross, and Skull raid-target icon textures, or clear all bot marks.
-- Use a vertically balanced tactics layout that fills the manager consistently with the roster tab.
-- Use the compact floating dock for Pull, Attack, Stop, Regroup, AOE, and quick access to the manager.
+- The former Tactics tab now lives in a movable, two-row dock at the top of the screen.
+- First row: Pull, Attack, Stop, Regroup, Pause, Resume, AOE, Object, and PB (open manager).
+- Second row: Tank, Healer, DPS, Melee, Ranged, CC Mark, Focus, and Clear. Roles apply to the targeted PartyBot.
+- CC Mark and Focus open a compact eight-choice picker. The buttons use readable mark abbreviations (Sta through Sku) and full-name hover tips, so the controls remain usable even when a Vanilla client lacks raid-mark artwork.
+- The dock still shows the active bot count, can be dragged, and can be hidden or shown with /pb dock.
 
 ### Notes
 
@@ -83,4 +81,4 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 
 ## Release
 
-The addon version is 1.5.1. See [CHANGELOG.md](CHANGELOG.md) for its release history.
+The addon version is 1.6.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.

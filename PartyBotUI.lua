@@ -379,14 +379,13 @@ end
 
 local PB_NAV_TITLES = {
     [1] = "Roster",
-    [2] = "Character",
+    [2] = "Character Sheet",
     [3] = "Bot Bags",
-    [4] = "Tactics",
-    [5] = "Notes"
+    [4] = "Notes"
 }
 
 function PartyBotUI_UpdateNavButtons(activeTabIndex)
-    for i = 1, 5 do
+    for i = 1, 4 do
         local btn = getglobal("PartyBotMainFrameTab" .. i)
         if btn then
             local text = getglobal(btn:GetName() .. "Text")
@@ -448,7 +447,6 @@ function PartyBotUI_SelectTab(tabIndex)
     PartyBotRosterTabFrame:Hide()
     PartyBotSheetTabFrame:Hide()
     PartyBotBagsTabFrame:Hide()
-    PartyBotTacticsTabFrame:Hide()
     PartyBotNotesTabFrame:Hide()
 
     if tabIndex == 1 then
@@ -473,9 +471,6 @@ function PartyBotUI_SelectTab(tabIndex)
         end
         PartyBotUI_RenderBags()
     elseif tabIndex == 4 then
-        PartyBotTacticsTabFrame:Show()
-        PartyBotUI_RenderTactics()
-    elseif tabIndex == 5 then
         PartyBotNotesTabFrame:Show()
         PartyBotUI_RenderNotes()
     end
@@ -1351,137 +1346,123 @@ function PartyBotUI_OnBagSlotClick(button, mouseBtn)
 end
 
 -- ============================================================================
--- TAB 4: Tactics & Roles Manager
+-- Two-row Tactical Dock
 -- ============================================================================
 
-function PartyBotUI_RenderTactics()
-    local frame = PartyBotTacticsTabFrame
+function PartyBotUI_InitDock()
+    local dock = PartyBotDockFrame
+    if dock.initialized then return end
 
-    if not frame.initialized then
-        frame.initialized = true
-
-        -- Section 1: Role Configuration
-        local rHeader = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        rHeader:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -68)
-        rHeader:SetText("Combat Role Switcher (.partybot setrole):")
-
-        local roles = {
-            { name = "Tank", cmd = "setrole tank" },
-            { name = "Healer", cmd = "setrole healer" },
-            { name = "DPS", cmd = "setrole dps" },
-            { name = "Melee DPS", cmd = "setrole meleedps" },
-            { name = "Ranged DPS", cmd = "setrole rangedps" }
-        }
-
-        for idx, r in ipairs(roles) do
-            local btn = CreateFrame("Button", "PBRoleBtn" .. idx, frame, "UIPanelButtonTemplate")
-            btn:SetWidth(90)
-            btn:SetHeight(24)
-            btn:SetPoint("TOPLEFT", rHeader, "BOTTOMLEFT", (idx - 1) * 94, -8)
-            btn:SetText(r.name)
-            btn.cmd = r.cmd
-            btn:SetScript("OnClick", function()
-                PartyBotUI_Command(this.cmd)
+    local function MakeButton(name, label, width, x, y, parent, onClick, tip)
+        local button = CreateFrame("Button", name, parent, "UIPanelButtonTemplate")
+        button:SetWidth(width)
+        button:SetHeight(24)
+        button:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+        button:SetText(label)
+        button:SetScript("OnClick", onClick)
+        if tip then
+            button:SetScript("OnEnter", function()
+                GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+                GameTooltip:SetText(tip)
+                GameTooltip:Show()
             end)
+            button:SetScript("OnLeave", function() GameTooltip:Hide() end)
         end
-
-        -- Section 2: Combat Flow Commands
-        local cHeader = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        cHeader:SetPoint("TOPLEFT", rHeader, "BOTTOMLEFT", 0, -65)
-        cHeader:SetText("Tactical Commands:")
-
-        local combatCmds = {
-            { name = "Pull Target", cmd = "pull", tip = "Orders Tank bot to pull your target" },
-            { name = "Attack Target", cmd = "attackstart", tip = "Orders all bots to attack your target" },
-            { name = "Stop Attack", cmd = "attackstop", tip = "Orders all bots to cease attack" },
-            { name = "Come To Me", cmd = "cometome", tip = "Forces bots to run to your coordinates" },
-            { name = "Pause AI", cmd = "pause", tip = "Freezes bot AI" },
-            { name = "Unpause AI", cmd = "unpause", tip = "Resumes bot AI" },
-            { name = "Toggle AOE", cmd = "aoe_toggle", tip = "Toggle AoE spells on/off" },
-            { name = "Interact Object", cmd = "usegobject", tip = "Orders bot to use targeted lever/door" }
-        }
-
-        for idx, c in ipairs(combatCmds) do
-            local col = math.mod(idx - 1, 2)
-            local row = math.floor((idx - 1) / 2)
-            local btn = CreateFrame("Button", "PBTacticsCmdBtn" .. idx, frame, "UIPanelButtonTemplate")
-            btn:SetWidth(225)
-            btn:SetHeight(26)
-            btn:SetPoint("TOPLEFT", cHeader, "BOTTOMLEFT", col * 235, - row * 30 - 8)
-            btn:SetText(c.name)
-            btn.cmd = c.cmd
-            btn:SetScript("OnClick", function()
-                if this.cmd == "aoe_toggle" then
-                    PartyBotUI_ToggleAOE()
-                else
-                    PartyBotUI_Command(this.cmd)
-                end
-            end)
-        end
-
-        -- Section 3: Raid Marks CC & Focus
-        local mHeader = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        mHeader:SetPoint("TOPLEFT", cHeader, "BOTTOMLEFT", 0, -170)
-        mHeader:SetText("Crowd Control & Focus Marks:")
-
-        local marks = { "star", "circle", "diamond", "triangle", "moon", "square", "cross", "skull" }
-
-        local function SetRaidMarkButtonIcon(btn, markIndex)
-            btn:SetText("")
-            local icon = btn:CreateTexture(nil, "OVERLAY")
-            icon:SetWidth(18)
-            icon:SetHeight(18)
-            icon:SetPoint("CENTER", btn, "CENTER", 0, 1)
-
-            -- Vanilla exposes each raid mark as a complete texture. Loading the
-            -- individual file avoids relying on later-client atlas helpers.
-            icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. markIndex)
-            icon:SetTexCoord(0, 1, 0, 1)
-
-            btn.raidMarkIcon = icon
-        end
-
-        local ccLbl = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        ccLbl:SetPoint("TOPLEFT", mHeader, "BOTTOMLEFT", 0, -8)
-        ccLbl:SetText("CC Mark (.partybot ccmark):")
-
-        for idx, m in ipairs(marks) do
-            local btn = CreateFrame("Button", "PBCCMarkBtn" .. idx, frame, "UIPanelButtonTemplate")
-            btn:SetWidth(52)
-            btn:SetHeight(22)
-            btn:SetPoint("TOPLEFT", ccLbl, "BOTTOMLEFT", (idx - 1) * 56, -4)
-            SetRaidMarkButtonIcon(btn, idx)
-            btn.mark = m
-            btn:SetScript("OnClick", function()
-                PartyBotUI_Command("ccmark " .. this.mark)
-            end)
-        end
-
-        local fLbl = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        fLbl:SetPoint("TOPLEFT", ccLbl, "BOTTOMLEFT", 0, -54)
-        fLbl:SetText("Focus Mark (.partybot focusmark):")
-
-        for idx, m in ipairs(marks) do
-            local btn = CreateFrame("Button", "PBFocusMarkBtn" .. idx, frame, "UIPanelButtonTemplate")
-            btn:SetWidth(52)
-            btn:SetHeight(22)
-            btn:SetPoint("TOPLEFT", fLbl, "BOTTOMLEFT", (idx - 1) * 56, -4)
-            SetRaidMarkButtonIcon(btn, idx)
-            btn.mark = m
-            btn:SetScript("OnClick", function()
-                PartyBotUI_Command("focusmark " .. this.mark)
-            end)
-        end
-
-        local clearBtn = CreateFrame("Button", "PBClearMarksBtn", frame, "UIPanelButtonTemplate")
-        clearBtn:SetWidth(120)
-        clearBtn:SetHeight(24)
-        clearBtn:SetPoint("TOPLEFT", fLbl, "BOTTOMLEFT", 0, -58)
-        clearBtn:SetText("Clear All Marks")
-        clearBtn:SetScript("OnClick", function()
-            PartyBotUI_Command("clearmarks")
-        end)
+        return x + width + 4
     end
+
+    local popup = CreateFrame("Frame", "PartyBotDockMarkPicker", dock)
+    popup:SetWidth(350)
+    popup:SetHeight(44)
+    popup:SetPoint("TOPLEFT", dock, "BOTTOMLEFT", 220, -2)
+    popup:SetFrameLevel(dock:GetFrameLevel() + 5)
+    local background = popup:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints(popup)
+    background:SetTexture(0, 0, 0)
+    background:SetAlpha(0.9)
+    local pickerLabel = popup:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    pickerLabel:SetPoint("LEFT", popup, "LEFT", 7, 0)
+    pickerLabel:SetText("CC:")
+    popup:Hide()
+
+    local marks = {
+        { "Sta", "star", "Star" }, { "Cir", "circle", "Circle" },
+        { "Dia", "diamond", "Diamond" }, { "Tri", "triangle", "Triangle" },
+        { "Moo", "moon", "Moon" }, { "Squ", "square", "Square" },
+        { "Cro", "cross", "Cross" }, { "Sku", "skull", "Skull" }
+    }
+    for i, mark in ipairs(marks) do
+        local markName = mark[2]
+        MakeButton("PartyBotDockMark" .. i, mark[1], 37, 42 + (i - 1) * 38, -10,
+            popup, function()
+                PartyBotUI_Command(popup.mode .. " " .. markName)
+                popup:Hide()
+            end, mark[3])
+    end
+
+    local function TogglePicker(mode)
+        if popup:IsShown() and popup.mode == mode then
+            popup:Hide()
+            return
+        end
+        popup.mode = mode
+        pickerLabel:SetText(mode == "ccmark" and "CC:" or "Focus:")
+        popup:Show()
+    end
+
+    local commands = {
+        { "Pull", "Pull", 60, "pull", "Tank bot pulls your target" },
+        { "Attack", "Attack", 66, "attackstart", "All bots attack your target" },
+        { "Stop", "Stop", 60, "attackstop", "Stop all bot attacks" },
+        { "Regroup", "Regroup", 78, "cometome", "Call bots to your position" },
+        { "Pause", "Pause", 60, "pause", "Pause the targeted bot AI" },
+        { "Resume", "Resume", 66, "unpause", "Resume the targeted bot AI" },
+        { "AOE", "AOE", 58, "aoe_toggle", "Toggle area damage" },
+        { "Object", "Object", 66, "usegobject", "Use the targeted game object" },
+        { "Open", "PB", 50, "toggle_ui", "Open PartyBot Manager" }
+    }
+    local x = 12
+    for _, entry in ipairs(commands) do
+        local command = entry[4]
+        x = MakeButton("PartyBotDock" .. entry[1] .. "Btn", entry[2], entry[3], x, -8,
+            dock, function()
+                popup:Hide()
+                if command == "aoe_toggle" then
+                    PartyBotUI_ToggleAOE()
+                elseif command == "toggle_ui" then
+                    PartyBotUI_ToggleMain()
+                else
+                    PartyBotUI_Command(command)
+                end
+            end, entry[5])
+    end
+
+    local roles = {
+        { "Tank", 64, "tank" }, { "Healer", 64, "healer" },
+        { "DPS", 64, "dps" }, { "Melee", 74, "meleedps" },
+        { "Ranged", 74, "rangedps" }
+    }
+    x = 12
+    for _, role in ipairs(roles) do
+        local roleName = role[3]
+        x = MakeButton("PartyBotDockRole" .. role[1], role[1], role[2], x, -42,
+            dock, function()
+                popup:Hide()
+                PartyBotUI_Command("setrole " .. roleName)
+            end, "Set the targeted PartyBot's role to " .. role[1])
+    end
+    x = MakeButton("PartyBotDockCCBtn", "CC Mark", 70, x, -42, dock,
+        function() TogglePicker("ccmark") end, "Choose a crowd-control raid mark")
+    x = MakeButton("PartyBotDockFocusBtn", "Focus", 70, x, -42, dock,
+        function() TogglePicker("focusmark") end, "Choose a focus-fire raid mark")
+    MakeButton("PartyBotDockClearBtn", "Clear", 74, x, -42, dock,
+        function()
+            popup:Hide()
+            PartyBotUI_Command("clearmarks")
+        end, "Clear crowd-control and focus marks")
+
+    dock:SetScript("OnHide", function() popup:Hide() end)
+    dock.initialized = true
 end
 
 -- ============================================================================
@@ -1638,6 +1619,7 @@ eventFrame:SetScript("OnEvent", function()
     if event == "VARIABLES_LOADED" then
         PartyBotUIDB = PartyBotUIDB or {}
         PartyBotUIDB.accountAlts = PartyBotUIDB.accountAlts or {}
+        PartyBotUI_InitDock()
         PartyBotUI_UpdateNavButtons(1)
         PartyBotUI_Command("alts")
     elseif event == "PARTY_MEMBERS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
