@@ -1541,7 +1541,6 @@ function PartyBotUI_InitDock()
         { "Pause", "Pause", 60, "pause", "Pause the targeted bot AI" },
         { "Resume", "Resume", 66, "unpause", "Resume the targeted bot AI" },
         { "AOE", "AOE", 58, "aoe_toggle", "Toggle area damage" },
-        { "Object", "Object", 66, "usegobject", "Use the targeted game object" },
         { "Open", "PB", 50, "toggle_ui", "Open PartyBot Manager" }
     }
     local x = 12
@@ -1558,6 +1557,7 @@ function PartyBotUI_InitDock()
                     PartyBotUI_Command(command)
                 end
             end, entry[5])
+        x = x + 10 -- Spread the remaining first-row buttons across the dock.
     end
 
     local roles = {

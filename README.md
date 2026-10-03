@@ -1,6 +1,6 @@
 # PartyBotUI
 
-PartyBotUI v1.10.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
+PartyBotUI v1.10.1 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
@@ -34,7 +34,7 @@ PartyBotUI v1.10.0 is a World of Warcraft Vanilla 1.12.1 addon for servers runni
 ### Tactical Dock
 
 - The former Tactics tab now lives in a movable, two-row dock at the top of the screen.
-- First row: Pull, Attack, Stop, Regroup, Pause, Resume, AOE, Object, and PB (open manager).
+- First row: Pull, Attack, Stop, Regroup, Pause, Resume, AOE, and PB (open manager).
 - Second row: Tank, Healer, DPS, Melee, Ranged, CC Mark, Focus, and Clear. Roles apply to the targeted PartyBot.
 - CC Mark and Focus open a compact eight-choice picker. The buttons use readable mark abbreviations (Sta through Sku) and full-name hover tips, so the controls remain usable even when a Vanilla client lacks raid-mark artwork.
 - The dock starts hidden on every login or UI reload. Open the Roster with the PB minimap button, then use Show Dock / Hide Dock at the top right. `/pb dock` also toggles it; the dock still shows the bot count and can be dragged.
@@ -81,4 +81,4 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 
 ## Release
 
-The addon version is 1.10.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.
+The addon version is 1.10.1. See [CHANGELOG.md](CHANGELOG.md) for its release history.

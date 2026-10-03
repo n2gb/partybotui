@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.1
+
+- Remove the unusable Object button from the tactical dock and spread the remaining top-row buttons across it. Future bot interaction and looting work is tracked with quest acceptance and turn-in.
+
 ## 1.10.0
 
 - Make the minimap PB button open the manager on the Roster tab. Add a Show Dock / Hide Dock button on Roster.
