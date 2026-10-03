@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.0
+
+- Make the minimap PB button open the manager on the Roster tab. Add a Show Dock / Hide Dock button on Roster.
+- Start the tactical dock hidden on every login or UI reload, ignoring the previous saved visibility setting. `/pb dock` remains available.
+
 ## 1.9.1
 
 - Move the Hearthstone bind area into the top Character Sheet line, beside the bot name and level. Replace race/class text with the class icon before the name.

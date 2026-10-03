@@ -184,7 +184,7 @@
     </Button>
 
     <!-- Two-row tactical dock. Buttons and mark picker are created by Lua. -->
-    <Frame name="PartyBotDockFrame" parent="UIParent" movable="true" enableMouse="true" hidden="false">
+    <Frame name="PartyBotDockFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true">
         <Size>
             <AbsDimension x="660" y="78"/>
         </Size>

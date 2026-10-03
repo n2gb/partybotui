@@ -134,13 +134,20 @@ function PartyBotUI_ToggleMain()
     end
 end
 
+function PartyBotUI_OpenRoster()
+    PartyBotMainFrame:Show()
+    PartyBotUI_CurrentTab = 1
+    PartyBotUI_UpdateAll()
+end
+
 function PartyBotUI_ToggleDock()
     if PartyBotDockFrame:IsShown() then
         PartyBotDockFrame:Hide()
-        PartyBotUIDB.dockVisible = false
     else
         PartyBotDockFrame:Show()
-        PartyBotUIDB.dockVisible = true
+    end
+    if PBRosterDockBtn then
+        PBRosterDockBtn:SetText(PartyBotDockFrame:IsShown() and "Hide Dock" or "Show Dock")
     end
 end
 
@@ -560,6 +567,13 @@ function PartyBotUI_RenderRoster()
         header1:SetText("Active PartyBots (Max 4):")
         frame.header1 = header1
 
+        local dockBtn = CreateFrame("Button", "PBRosterDockBtn", frame, "UIPanelButtonTemplate")
+        dockBtn:SetWidth(105)
+        dockBtn:SetHeight(24)
+        dockBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -24, -64)
+        dockBtn:SetScript("OnClick", PartyBotUI_ToggleDock)
+        frame.dockBtn = dockBtn
+
         frame.activeBotButtons = {}
         for i = 1, 4 do
             local btn = CreateFrame("Button", "PBRosterActiveBtn" .. i, frame, "UIPanelButtonTemplate")
@@ -631,6 +645,8 @@ function PartyBotUI_RenderRoster()
             end)
         end
     end
+
+    frame.dockBtn:SetText(PartyBotDockFrame:IsShown() and "Hide Dock" or "Show Dock")
 
     -- Update Active Bots List
     for i = 1, 4 do
@@ -1582,16 +1598,10 @@ function PartyBotUI_InitMinimapButton()
     button:SetFrameLevel(Minimap:GetFrameLevel() + 8)
     button:SetText("PB")
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    button:SetScript("OnClick", function()
-        if arg1 == "RightButton" then
-            PartyBotUI_ToggleMain()
-        else
-            PartyBotUI_ToggleDock()
-        end
-    end)
+    button:SetScript("OnClick", PartyBotUI_OpenRoster)
     button:SetScript("OnEnter", function()
         GameTooltip:SetOwner(this, "ANCHOR_LEFT")
-        GameTooltip:SetText("PartyBot: left-click dock, right-click manager")
+        GameTooltip:SetText("PartyBot: open Roster (dock control inside)")
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1757,10 +1767,10 @@ eventFrame:SetScript("OnEvent", function()
     if event == "VARIABLES_LOADED" then
         PartyBotUIDB = PartyBotUIDB or {}
         PartyBotUIDB.accountAlts = PartyBotUIDB.accountAlts or {}
-        if PartyBotUIDB.dockVisible == nil then PartyBotUIDB.dockVisible = true end
+        PartyBotUIDB.dockVisible = nil -- Retire the old auto-show setting.
         PartyBotUI_InitDock()
+        PartyBotDockFrame:Hide()
         PartyBotUI_InitMinimapButton()
-        if PartyBotUIDB.dockVisible == false then PartyBotDockFrame:Hide() end
         PartyBotUI_UpdateNavButtons(1)
         PartyBotUI_Command("alts")
     elseif event == "PARTY_MEMBERS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
