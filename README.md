@@ -1,6 +1,6 @@
 # PartyBotUI
 
-PartyBotUI v1.11.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
+PartyBotUI v1.12.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
@@ -38,13 +38,13 @@ PartyBotUI v1.11.0 is a World of Warcraft Vanilla 1.12.1 addon for servers runni
 - Target the quest giver, then press **Turn In** on a quest, **Turn In: This Bot**, or **Turn In: All Bots**. Bots walk to the quest giver and hand in every finished quest it accepts. Quests that still need a reward choice stay in the log and the tab opens on that bot.
 - **Abandon** removes a quest from the bot's log after a confirmation.
 - **Loot quest items** lets the bot pick up its own quest items from nearby kills. Shared quest drops are left for you until you have enough.
-- Give quests to bots by sharing them from your own quest log.
-- Requires a server with the PartyBot quest commands (`.partybot quests`, `setreward`, `turnin`, `abandonquest`, `questloot`).
+- Give quests to bots by sharing them from your own quest log, or press **Pick Up: All Bots** with the quest giver targeted: bots walk over and accept that giver's quests that are in your log. This works for quests that can't be shared and for quests that hand out a quest item. With nothing targeted, the nearest quest object (such as a wanted poster) within 10 yards is used.
+- Requires a server with the PartyBot quest commands (`.partybot quests`, `setreward`, `turnin`, `pickup`, `abandonquest`, `questloot`).
 
 ### Tactical Dock
 
 - The former Tactics tab now lives in a movable, two-row dock at the top of the screen.
-- First row: Pull, Attack, Stop, Regroup, Pause, Resume, AOE, Turn In (all bots, to your targeted quest giver), and PB (open manager).
+- First row: Pull, Attack, Stop, Regroup, Pause, Resume, AOE, Turn In (all bots, to your targeted quest giver), Pick Up (all bots accept your quests from it), and PB (open manager).
 - Second row: Tank, Healer, DPS, Melee, Ranged, CC Mark, Focus, and Clear. Roles apply to the targeted PartyBot.
 - CC Mark and Focus open a compact eight-choice picker. The buttons use readable mark abbreviations (Sta through Sku) and full-name hover tips, so the controls remain usable even when a Vanilla client lacks raid-mark artwork.
 - The dock starts hidden on every login or UI reload. Open the Roster with the PB minimap button, then use Show Dock / Hide Dock at the top right. `/pb dock` also toggles it; the dock still shows the bot count and can be dragged.
@@ -85,6 +85,7 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 | `/pb bags` | Query the targeted bot's bags |
 | `/pb quests` or `/pb q` | Open the Quests tab |
 | `/pb turnin` | All bots turn in finished quests to your targeted quest giver |
+| `/pb pickup` | All bots accept your quests from your targeted quest giver |
 
 ## Compatibility
 
@@ -93,4 +94,4 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 
 ## Release
 
-The addon version is 1.11.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.
+The addon version is 1.12.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.

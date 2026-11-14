@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.0
+
+- Add Pick Up: with a quest giver targeted (or next to a quest object such as a wanted poster), bots walk over and accept that giver's quests that are in your quest log, including quests that can't be shared and quests that give a quest item. Available as **Pick Up: All Bots** in the Quests tab, a dock button, and `/pb pickup`.
+- Bot errand results (accepted, turned in, looted, could not) always reach chat, even when they arrive within five seconds of an addon command. The addon no longer prints its own duplicate turn-in failure line.
+
 ## 1.11.0
 
 - Add a Quests tab: each bot's quest log with objective progress and a Ready marker, reward-choice icons (or Auto) saved per quest with `.partybot setreward`, per-quest Turn In and Abandon, Turn In for the selected bot or all bots, and a Loot quest items toggle.

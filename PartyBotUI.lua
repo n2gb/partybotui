@@ -116,7 +116,8 @@ local function PartyBotUI_IsCommandError(msg)
         "no item", "no character selected", "you are not", "usage:",
         "unknown", "invalid", "incorrect", "must ", "requires ",
         "is full", "while dead", "in combat", "you can only",
-        "choose a bag", "replacement bag", "need "
+        "choose a bag", "replacement bag", "need ", "could not", "can't take",
+        " accepted \"", " turned in ", " looted "
     }
 
     for _, text in ipairs(errorText) do
@@ -1572,6 +1573,7 @@ function PartyBotUI_InitDock()
         { "Resume", "Resume", 66, "unpause", "Resume the targeted bot AI" },
         { "AOE", "AOE", 58, "aoe_toggle", "Toggle area damage" },
         { "TurnIn", "Turn In", 66, "turnin_all", "Bots turn in finished quests to your target\n(choose rewards in the Quests tab)" },
+        { "PickUp", "Pick Up", 64, "pickup_all", "Bots accept your quests from your targeted quest giver\n(or the nearest wanted poster when nothing is targeted)" },
         { "Open", "PB", 50, "toggle_ui", "Open PartyBot Manager" }
     }
     local x = 12
@@ -1584,6 +1586,8 @@ function PartyBotUI_InitDock()
                     PartyBotUI_ToggleAOE()
                 elseif command == "turnin_all" then
                     PartyBotUI_TurnIn(nil)
+                elseif command == "pickup_all" then
+                    PartyBotUI_PickUp(nil)
                 elseif command == "toggle_ui" then
                     PartyBotUI_ToggleMain()
                 else
@@ -1952,19 +1956,17 @@ function PartyBotUI_ProcessQuestMessage(msg)
         return true
     end
 
-    -- [PB_TASK] <bot> <action> <ok|fail> <reason> <count>: refresh after a turn-in.
-    local _, _, tBot, tAction, tResult, tReason = string.find(msg, "^%[PB_TASK%]%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+    -- [PB_TASK] <bot> <action> <ok|fail> <reason> <count>: refresh after a turn-in or pickup.
+    -- The server's own readable line explains the result, so nothing is printed here.
+    local _, _, tBot, tAction = string.find(msg, "^%[PB_TASK%]%s+(%S+)%s+(%S+)")
     if tBot then
-        if tAction == "turnin" then
+        if tAction == "turnin" or tAction == "pickup" then
             PartyBotUI_ScheduleQuestRefresh(tBot, 1)
-            if tResult ~= "ok" and tReason ~= "reward_choice" then
-                PartyBotUI_Print(tBot .. " could not turn in: " .. string.gsub(tReason, "_", " ") .. ".")
-            end
         end
         return true
     end
 
-    if string.find(msg, "^%[PB_TURNIN%]") then
+    if string.find(msg, "^%[PB_TURNIN%]") or string.find(msg, "^%[PB_PICKUP%]") then
         return true
     end
 
@@ -2009,6 +2011,19 @@ function PartyBotUI_TurnIn(botName, questId)
     end
 
     local cmd = "turnin " .. (botName or "all")
+    if questId then cmd = cmd .. " " .. questId end
+    PartyBotUI_Command(cmd)
+end
+
+-- Bots accept quests from your targeted quest giver (or, with nothing targeted,
+-- the nearest quest object such as a wanted poster). Without questId they take
+-- that giver's quests that are already in your quest log.
+function PartyBotUI_PickUp(botName, questId)
+    if UnitExists("target") and (UnitIsPlayer("target") or UnitCanAttack("player", "target")) then
+        PartyBotUI_Print("Target the quest giver (or clear your target next to a quest object), then press Pick Up.")
+        return
+    end
+    local cmd = "pickup " .. (botName or "all")
     if questId then cmd = cmd .. " " .. questId end
     PartyBotUI_Command(cmd)
 end
@@ -2242,7 +2257,7 @@ function PartyBotUI_RenderQuests()
         frame.hint:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -100)
         frame.hint:SetWidth(250)
         frame.hint:SetJustifyH("LEFT")
-        frame.hint:SetText("Pick rewards, target the quest giver, then Turn In.")
+        frame.hint:SetText("Target a quest giver, then Pick Up or Turn In.")
 
         frame.lootCheck = CreateFrame("CheckButton", "PBQuestLootCheck", frame, "UICheckButtonTemplate")
         frame.lootCheck:SetWidth(24)
@@ -2313,11 +2328,18 @@ function PartyBotUI_RenderQuests()
         frame.turnInAllBtn:SetText("Turn In: All Bots")
         frame.turnInAllBtn:SetScript("OnClick", function() PartyBotUI_TurnIn(nil) end)
 
-        frame.shareHint = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-        frame.shareHint:SetPoint("LEFT", frame.turnInAllBtn, "RIGHT", 10, 0)
-        frame.shareHint:SetWidth(150)
-        frame.shareHint:SetJustifyH("LEFT")
-        frame.shareHint:SetText("Share quests from your quest log to give them to bots.")
+        frame.pickUpBtn = CreateFrame("Button", "PBQuestPickUpBtn", frame, "UIPanelButtonTemplate")
+        frame.pickUpBtn:SetWidth(150)
+        frame.pickUpBtn:SetHeight(24)
+        frame.pickUpBtn:SetPoint("LEFT", frame.turnInAllBtn, "RIGHT", 8, 0)
+        frame.pickUpBtn:SetText("Pick Up: All Bots")
+        frame.pickUpBtn:SetScript("OnClick", function() PartyBotUI_PickUp(nil) end)
+        frame.pickUpBtn:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Bots walk to your targeted quest giver and accept the\nquests from it that are in your quest log, including\nones you can't share and ones that give a quest item.\nWith nothing targeted, the nearest quest object\n(e.g. a wanted poster) within 10 yards is used.")
+            GameTooltip:Show()
+        end)
+        frame.pickUpBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     end
 
     for i = 1, 4 do
@@ -2355,7 +2377,7 @@ function PartyBotUI_RenderQuests()
     end
 
     if table.getn(data.list) == 0 then
-        frame.emptyText:SetText(bot.name .. " has no quests.\nShare one from your quest log to give it to your bots.")
+        frame.emptyText:SetText(bot.name .. " has no quests.\nShare one from your quest log, or target its quest giver\nand press Pick Up.")
         frame.emptyText:Show()
         frame.content:SetHeight(360)
         return
@@ -2453,6 +2475,8 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
         PartyBotUI_SelectTab(5)
     elseif msg == "turnin" then
         PartyBotUI_TurnIn(nil)
+    elseif msg == "pickup" then
+        PartyBotUI_PickUp(nil)
     elseif msg == "bags" then
         local name = UnitName("target")
         if name then
@@ -2469,6 +2493,6 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
             PartyBotUI_Command("money " .. (mArgs or ""))
         end
     else
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[PartyBot]|r Unknown command. Use /pb, /pb dock, /pb pull, /pb atk, /pb stop, /pb follow, /pb aoe, /pb bags, /pb money, /pb quests, or /pb turnin.")
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[PartyBot]|r Unknown command. Use /pb, /pb dock, /pb pull, /pb atk, /pb stop, /pb follow, /pb aoe, /pb bags, /pb money, /pb quests, /pb pickup, or /pb turnin.")
     end
 end
