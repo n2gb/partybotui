@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.1
+
+- Fix Pick Up, Turn In and the dock's bot commands doing nothing (or acting on the wrong bot) after the manager opened. Reading a bot's gear made the server treat that bot as your selection while your target frame still showed the quest giver. The addon now re-sends your current target before those commands; a hostile target is left alone while you are in combat so auto-attack is not interrupted.
+
 ## 1.12.0
 
 - Add Pick Up: with a quest giver targeted (or next to a quest object such as a wanted poster), bots walk over and accept that giver's quests that are in your quest log, including quests that can't be shared and quests that give a quest item. Available as **Pick Up: All Bots** in the Quests tab, a dock button, and `/pb pickup`.

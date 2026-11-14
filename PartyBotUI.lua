@@ -108,6 +108,29 @@ function PartyBotUI_Command(cmd)
     end
 end
 
+-- The server treats an inspected unit as the player's selection, while the client
+-- keeps showing the real target. After the addon inspects a bot (to read its gear),
+-- .partybot commands that act on "your target" would see that bot instead.
+local PartyBotUI_SelectionDirty = false
+
+local function PartyBotUI_Inspect(unit)
+    if not UnitIsUnit("target", unit) then
+        PartyBotUI_SelectionDirty = true
+    end
+    NotifyInspect(unit)
+end
+
+-- Re-send the real target before a command that uses it. A hostile target is not
+-- refreshed while you are in combat, so your melee auto-attack is never interrupted;
+-- it is refreshed on the next out-of-combat command or target change.
+function PartyBotUI_ResyncSelection()
+    if not PartyBotUI_SelectionDirty or not UnitExists("target") then return end
+    if UnitCanAttack("player", "target") and UnitAffectingCombat("player") then return end
+    ClearTarget()
+    TargetLastTarget()
+    PartyBotUI_SelectionDirty = false
+end
+
 local function PartyBotUI_IsCommandError(msg)
     local lower = string.lower(msg or "")
     local errorText = {
@@ -198,7 +221,7 @@ function PartyBotUI_UpdateRoster()
     -- Trigger inspect for active bots
     for idx, bot in ipairs(PartyBotUI_ActiveBots) do
         if CheckInteractDistance(bot.unit, 1) then
-            NotifyInspect(bot.unit)
+            PartyBotUI_Inspect(bot.unit)
         end
     end
 end
@@ -915,7 +938,7 @@ frame.viewBagsBtn:SetHeight(24)
     end
 
     -- Inspect unit and refresh equipment
-    NotifyInspect(currentBot.unit)
+    PartyBotUI_Inspect(currentBot.unit)
     PartyBotUI_CacheBotEquipment(currentBot.unit)
 
     -- Update 3D Character Model
@@ -1591,6 +1614,7 @@ function PartyBotUI_InitDock()
                 elseif command == "toggle_ui" then
                     PartyBotUI_ToggleMain()
                 else
+                    PartyBotUI_ResyncSelection()
                     PartyBotUI_Command(command)
                 end
             end, entry[5])
@@ -1608,6 +1632,7 @@ function PartyBotUI_InitDock()
         x = MakeButton("PartyBotDockRole" .. role[1], role[1], role[2], x, -42,
             dock, function()
                 popup:Hide()
+                PartyBotUI_ResyncSelection()
                 PartyBotUI_Command("setrole " .. roleName)
             end, "Set the targeted PartyBot's role to " .. role[1])
     end
@@ -2010,6 +2035,7 @@ function PartyBotUI_TurnIn(botName, questId)
         end
     end
 
+    PartyBotUI_ResyncSelection()
     local cmd = "turnin " .. (botName or "all")
     if questId then cmd = cmd .. " " .. questId end
     PartyBotUI_Command(cmd)
@@ -2023,6 +2049,7 @@ function PartyBotUI_PickUp(botName, questId)
         PartyBotUI_Print("Target the quest giver (or clear your target next to a quest object), then press Pick Up.")
         return
     end
+    PartyBotUI_ResyncSelection()
     local cmd = "pickup " .. (botName or "all")
     if questId then cmd = cmd .. " " .. questId end
     PartyBotUI_Command(cmd)
@@ -2420,6 +2447,7 @@ eventFrame:RegisterEvent("VARIABLES_LOADED")
 eventFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
 eventFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
 
 eventFrame:SetScript("OnEvent", function()
     if event == "VARIABLES_LOADED" then
@@ -2437,6 +2465,9 @@ eventFrame:SetScript("OnEvent", function()
         if PartyBotMainFrame:IsShown() then
             PartyBotUI_SelectTab(PartyBotUI_CurrentTab)
         end
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        -- A real target change tells the server the new selection.
+        PartyBotUI_SelectionDirty = false
     elseif event == "UNIT_INVENTORY_CHANGED" then
         if arg1 and string.find(arg1, "^party%d") then
             PartyBotUI_CacheBotEquipment(arg1)

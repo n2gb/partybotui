@@ -1,6 +1,6 @@
 # PartyBotUI
 
-PartyBotUI v1.12.0 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
+PartyBotUI v1.12.1 is a World of Warcraft Vanilla 1.12.1 addon for servers running the vMaNGOS PartyBot companion system. It replaces routine `.partybot` chat commands with a Blizzard-style manager for summoning bots, inspecting characters and bags, and issuing tactical orders.
 
 ## Features
 
@@ -94,4 +94,4 @@ PartyBotUI consumes its structured `[PB_*]` data messages and suppresses success
 
 ## Release
 
-The addon version is 1.12.0. See [CHANGELOG.md](CHANGELOG.md) for its release history.
+The addon version is 1.12.1. See [CHANGELOG.md](CHANGELOG.md) for its release history.
