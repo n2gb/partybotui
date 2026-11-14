@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.0
+
+- Add a Quests tab: each bot's quest log with objective progress and a Ready marker, reward-choice icons (or Auto) saved per quest with `.partybot setreward`, per-quest Turn In and Abandon, Turn In for the selected bot or all bots, and a Loot quest items toggle.
+- When a turn-in stops for a missing reward choice, the addon opens the Quests tab on that bot instead of printing the raw command hint.
+- Add Turn In to the tactical dock, and `/pb quests` and `/pb turnin` slash commands.
+- Shorten the Character Sheet tab label to Character so five tabs fit.
+
 ## 1.10.1
 
 - Remove the unusable Object button from the tactical dock and spread the remaining top-row buttons across it. Future bot interaction and looting work is tracked with quest acceptance and turn-in.

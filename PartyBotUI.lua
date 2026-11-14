@@ -21,6 +21,19 @@ local PartyBotUI_PendingInspect = nil
 local PartyBotUI_LastCommandAt = nil
 local PB_ACCOUNT_ALT_LIMIT = 9
 
+-- Quest logs reported by the server (.partybot quests), keyed by bot name.
+local PartyBotUI_BotQuests = {}
+local PartyBotUI_BotQuestLoot = {}
+local PartyBotUI_QuestRequests = {}
+local PartyBotUI_PendingQuestRefresh = {}
+local PartyBotUI_RewardPromptAt = {}
+local PartyBotUI_PendingAbandon = nil
+
+local PB_QUALITY_COLORS = {
+    [0] = "9d9d9d", [1] = "ffffff", [2] = "1eff00",
+    [3] = "0070dd", [4] = "a335ee", [5] = "ff8000"
+}
+
 -- Standard 1.12.1 Equipment Slot IDs and Names
 local PB_SLOT_NAMES = {
     [1] = "Head", [2] = "Neck", [3] = "Shoulders", [4] = "Shirt",
@@ -273,6 +286,8 @@ end
 function PartyBotUI_ProcessPBMessage(msg)
     if not msg then return end
 
+    if PartyBotUI_ProcessQuestMessage(msg) then return end
+
     -- Primary professions are supplied by the server for the selected PartyBot.
     local _, _, startProf = string.find(msg, "^%[PB_PROF_START%]%s+(%S+)")
     if startProf then
@@ -433,6 +448,14 @@ ChatFrame_OnEvent = function(event)
         PartyBotUI_ProcessPBMessage(arg1)
         return -- Suppress from appearing in user's chat window!
     end
+    -- The addon shows its own reward prompt and opens the Quests tab instead.
+    if event == "CHAT_MSG_SYSTEM" and arg1 then
+        local _, _, promptBot = string.find(arg1, "^(%S+) needs a reward choice for ")
+        if promptBot and PartyBotUI_RewardPromptAt[promptBot]
+            and GetTime() - PartyBotUI_RewardPromptAt[promptBot] < 3 then
+            return
+        end
+    end
     if event == "CHAT_MSG_SYSTEM" and arg1 and PartyBotUI_LastCommandAt and GetTime() - PartyBotUI_LastCommandAt < 5 then
         if not PartyBotUI_IsCommandError(arg1) then
             return -- Keep successful PartyBot command responses out of chat.
@@ -447,13 +470,14 @@ end
 
 local PB_NAV_TITLES = {
     [1] = "Roster",
-    [2] = "Character Sheet",
+    [2] = "Character",
     [3] = "Bot Bags",
-    [4] = "Notes"
+    [4] = "Notes",
+    [5] = "Quests"
 }
 
 function PartyBotUI_UpdateNavButtons(activeTabIndex)
-    for i = 1, 4 do
+    for i = 1, 5 do
         local btn = getglobal("PartyBotMainFrameTab" .. i)
         if btn then
             local text = getglobal(btn:GetName() .. "Text")
@@ -516,6 +540,7 @@ function PartyBotUI_SelectTab(tabIndex, focusNotes)
     PartyBotSheetTabFrame:Hide()
     PartyBotBagsTabFrame:Hide()
     PartyBotNotesTabFrame:Hide()
+    PartyBotQuestsTabFrame:Hide()
 
     if tabIndex == 1 then
         PartyBotRosterTabFrame:Show()
@@ -542,6 +567,11 @@ function PartyBotUI_SelectTab(tabIndex, focusNotes)
         PartyBotNotesTabFrame:Show()
         PartyBotUI_RenderNotes()
         if focusNotes then PartyBotNotesTabFrame.edit:SetFocus() end
+    elseif tabIndex == 5 then
+        PartyBotQuestsTabFrame:Show()
+        local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+        if bot then PartyBotUI_RequestQuests(bot.name) end
+        PartyBotUI_RenderQuests()
     end
 end
 
@@ -1541,6 +1571,7 @@ function PartyBotUI_InitDock()
         { "Pause", "Pause", 60, "pause", "Pause the targeted bot AI" },
         { "Resume", "Resume", 66, "unpause", "Resume the targeted bot AI" },
         { "AOE", "AOE", 58, "aoe_toggle", "Toggle area damage" },
+        { "TurnIn", "Turn In", 66, "turnin_all", "Bots turn in finished quests to your target\n(choose rewards in the Quests tab)" },
         { "Open", "PB", 50, "toggle_ui", "Open PartyBot Manager" }
     }
     local x = 12
@@ -1551,6 +1582,8 @@ function PartyBotUI_InitDock()
                 popup:Hide()
                 if command == "aoe_toggle" then
                     PartyBotUI_ToggleAOE()
+                elseif command == "turnin_all" then
+                    PartyBotUI_TurnIn(nil)
                 elseif command == "toggle_ui" then
                     PartyBotUI_ToggleMain()
                 else
@@ -1754,6 +1787,609 @@ function PartyBotUI_RenderNotes()
 end
 
 -- ============================================================================
+-- TAB 5: Quests (bot quest logs, reward choices, turn-in)
+-- ============================================================================
+
+local function PartyBotUI_Print(text)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffffd200[PartyBot]|r " .. text)
+end
+
+local function PartyBotUI_FindBotIndex(name)
+    for i, bot in ipairs(PartyBotUI_ActiveBots) do
+        if bot.name == name then return i end
+    end
+    return nil
+end
+
+local function PartyBotUI_QuestsTabShowing(botName)
+    if not PartyBotMainFrame:IsShown() or PartyBotUI_CurrentTab ~= 5 then return false end
+    if not botName then return true end
+    local selected = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+    return selected and selected.name == botName
+end
+
+-- Ask the server for a bot's quest log and quest-loot setting.
+function PartyBotUI_RequestQuests(botName, force)
+    if not botName then return end
+    local data = PartyBotUI_BotQuests[botName]
+    local requested = PartyBotUI_QuestRequests[botName]
+    if not force then
+        if requested and GetTime() - requested < 3 then return end
+        if data and data.fetchedAt and GetTime() - data.fetchedAt < 3 then return end
+    end
+    PartyBotUI_QuestRequests[botName] = GetTime()
+    PartyBotUI_Command("quests " .. botName)
+    PartyBotUI_Command("questloot " .. botName)
+end
+
+local function PartyBotUI_ScheduleQuestRefresh(botName, delay)
+    PartyBotUI_PendingQuestRefresh[botName] = GetTime() + (delay or 1)
+end
+
+local questRefreshFrame = CreateFrame("Frame", "PartyBotUIQuestRefreshFrame", UIParent)
+questRefreshFrame:SetScript("OnUpdate", function()
+    local now = GetTime()
+    for botName, at in pairs(PartyBotUI_PendingQuestRefresh) do
+        if now >= at then
+            PartyBotUI_PendingQuestRefresh[botName] = nil
+            PartyBotUI_RequestQuests(botName, true)
+        end
+    end
+end)
+
+-- Parse [PB_Q*] / quest-related lines. Returns true when handled.
+function PartyBotUI_ProcessQuestMessage(msg)
+    local _, _, qStart = string.find(msg, "^%[PB_Q_START%]%s+(%S+)")
+    if qStart then
+        PartyBotUI_BotQuests[qStart] = { list = {}, byId = {} }
+        return true
+    end
+
+    local _, _, qBot, qId, qStatus, qLevel, qTitle = string.find(msg,
+        "^%[PB_Q%]%s+(%S+)%s+(%d+)%s+(%S+)%s+(%d+)%s+(.+)$")
+    if qBot then
+        local data = PartyBotUI_BotQuests[qBot]
+        if data then
+            local quest = {
+                id = tonumber(qId), status = qStatus, level = tonumber(qLevel),
+                title = qTitle, objectives = {}, rewards = {}
+            }
+            table.insert(data.list, quest)
+            data.byId[quest.id] = quest
+        end
+        return true
+    end
+
+    local _, _, oBot, oQuest, oIndex, oType, oEntry, oHave, oNeed, oName = string.find(msg,
+        "^%[PB_QO%]%s+(%S+)%s+(%d+)%s+(%d+)%s+(%S+)%s+(%d+)%s+(%d+)%s+(%d+)%s*(.*)$")
+    if oBot then
+        local data = PartyBotUI_BotQuests[oBot]
+        local quest = data and data.byId[tonumber(oQuest)]
+        if quest then
+            local name = oName
+            if not name or name == "" then name = oType .. " " .. oEntry end
+            table.insert(quest.objectives, {
+                kind = oType, entry = tonumber(oEntry),
+                have = tonumber(oHave) or 0, need = tonumber(oNeed) or 0, name = name
+            })
+        end
+        return true
+    end
+
+    local _, _, rBot, rQuest, rNumber, rItem, rCount, rQuality, rName = string.find(msg,
+        "^%[PB_QR%]%s+(%S+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(.+)$")
+    if rBot then
+        local data = PartyBotUI_BotQuests[rBot]
+        local quest = data and data.byId[tonumber(rQuest)]
+        if quest then
+            table.insert(quest.rewards, {
+                number = tonumber(rNumber), itemId = tonumber(rItem),
+                count = tonumber(rCount) or 1, quality = tonumber(rQuality) or 1, name = rName
+            })
+        end
+        return true
+    end
+
+    local _, _, sBot, sQuest, sValue = string.find(msg, "^%[PB_QSEL%]%s+(%S+)%s+(%d+)%s+(%S+)")
+    if sBot then
+        local data = PartyBotUI_BotQuests[sBot]
+        local quest = data and data.byId[tonumber(sQuest)]
+        if quest then
+            if sValue == "none" then
+                quest.selected = nil
+            elseif sValue == "auto" then
+                quest.selected = "auto"
+            else
+                quest.selected = tonumber(sValue)
+            end
+            if data.fetchedAt and PartyBotUI_QuestsTabShowing(sBot) then
+                PartyBotUI_RenderQuests()
+            end
+        end
+        return true
+    end
+
+    local _, _, eBot = string.find(msg, "^%[PB_Q_END%]%s+(%S+)")
+    if eBot then
+        if PartyBotUI_BotQuests[eBot] then
+            PartyBotUI_BotQuests[eBot].fetchedAt = GetTime()
+        end
+        PartyBotUI_QuestRequests[eBot] = nil
+        if PartyBotUI_QuestsTabShowing(eBot) then PartyBotUI_RenderQuests() end
+        return true
+    end
+
+    local _, _, lBot, lState = string.find(msg, "^%[PB_QLOOT%]%s+(%S+)%s+(%S+)")
+    if lBot then
+        PartyBotUI_BotQuestLoot[lBot] = (lState == "on")
+        if PartyBotUI_QuestsTabShowing(lBot) then PartyBotUI_RenderQuests() end
+        return true
+    end
+
+    local _, _, aBot, aQuest = string.find(msg, "^%[PB_QABANDON%]%s+(%S+)%s+(%d+)%s+requested")
+    if aBot then
+        PartyBotUI_ScheduleQuestRefresh(aBot, 1)
+        return true
+    end
+
+    -- [PB_REWARD_CHOICE] <bot> <questId> <n>:<itemId> ...: open the Quests tab on that bot.
+    local _, _, cBot, cQuest = string.find(msg, "^%[PB_REWARD_CHOICE%]%s+(%S+)%s+(%d+)")
+    if cBot then
+        PartyBotUI_RewardPromptAt[cBot] = GetTime()
+        local data = PartyBotUI_BotQuests[cBot]
+        local quest = data and data.byId[tonumber(cQuest)]
+        local title = quest and quest.title or ("quest " .. cQuest)
+        PartyBotUI_Print(cBot .. " needs a reward choice for " .. title .. ". Pick it in the Quests tab, then Turn In again.")
+        local index = PartyBotUI_FindBotIndex(cBot)
+        if index then
+            if not PartyBotMainFrame:IsShown() or PartyBotUI_CurrentTab ~= 5 then
+                PartyBotUI_SelectedBot = index
+                PartyBotMainFrame:Show()
+                PartyBotUI_UpdateRoster()
+                PartyBotUI_SelectTab(5)
+            end
+        end
+        return true
+    end
+
+    -- [PB_TASK] <bot> <action> <ok|fail> <reason> <count>: refresh after a turn-in.
+    local _, _, tBot, tAction, tResult, tReason = string.find(msg, "^%[PB_TASK%]%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+    if tBot then
+        if tAction == "turnin" then
+            PartyBotUI_ScheduleQuestRefresh(tBot, 1)
+            if tResult ~= "ok" and tReason ~= "reward_choice" then
+                PartyBotUI_Print(tBot .. " could not turn in: " .. string.gsub(tReason, "_", " ") .. ".")
+            end
+        end
+        return true
+    end
+
+    if string.find(msg, "^%[PB_TURNIN%]") then
+        return true
+    end
+
+    return false
+end
+
+local function PartyBotUI_HasQuestGiverTarget()
+    return UnitExists("target") and not UnitIsPlayer("target") and not UnitCanAttack("player", "target")
+end
+
+local function PartyBotUI_MissingRewardChoices(botName)
+    local data = PartyBotUI_BotQuests[botName]
+    local missing = {}
+    if not data then return missing end
+    for _, quest in ipairs(data.list) do
+        if quest.status == "complete" and table.getn(quest.rewards) > 0 and not quest.selected then
+            table.insert(missing, quest.title)
+        end
+    end
+    return missing
+end
+
+-- Turn in finished quests for one bot (botName) or every bot (nil).
+-- questId limits it to one quest. Rewards come from the saved choices.
+function PartyBotUI_TurnIn(botName, questId)
+    if not PartyBotUI_HasQuestGiverTarget() then
+        PartyBotUI_Print("Target the quest giver first, then press Turn In.")
+        return
+    end
+
+    local bots = {}
+    if botName then
+        table.insert(bots, botName)
+    else
+        for _, bot in ipairs(PartyBotUI_ActiveBots) do table.insert(bots, bot.name) end
+    end
+    for _, name in ipairs(bots) do
+        local missing = PartyBotUI_MissingRewardChoices(name)
+        if table.getn(missing) > 0 then
+            PartyBotUI_Print(name .. " has no reward chosen for: " .. table.concat(missing, ", ") .. ". Those stay in its log.")
+        end
+    end
+
+    local cmd = "turnin " .. (botName or "all")
+    if questId then cmd = cmd .. " " .. questId end
+    PartyBotUI_Command(cmd)
+end
+
+local function PartyBotUI_SetReward(botName, quest, value)
+    if quest.selected == value then value = "clear" end
+    PartyBotUI_Command("setreward " .. botName .. " " .. quest.id .. " " .. value)
+end
+
+StaticPopupDialogs["PARTYBOTUI_ABANDON_QUEST"] = {
+    text = "Have %s abandon \"%s\"?",
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function()
+        local pending = PartyBotUI_PendingAbandon
+        PartyBotUI_PendingAbandon = nil
+        if pending then
+            PartyBotUI_Command("abandonquest " .. pending.bot .. " " .. pending.questId)
+        end
+    end,
+    OnCancel = function() PartyBotUI_PendingAbandon = nil end,
+    timeout = 0,
+    whileDead = 1,
+    hideOnEscape = 1
+}
+
+local PB_QUEST_CARD_WIDTH = 436
+local PB_QUEST_REWARD_SIZE = 28
+
+local function PartyBotUI_CreateQuestCard(parent, index)
+    local card = CreateFrame("Frame", "PBQuestCard" .. index, parent)
+    card:SetWidth(PB_QUEST_CARD_WIDTH)
+    card:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 }
+    })
+    card:SetBackdropColor(0.08, 0.07, 0.05, 0.9)
+    card:SetBackdropBorderColor(0.45, 0.38, 0.25, 0.9)
+
+    card.title = card:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    card.title:SetPoint("TOPLEFT", card, "TOPLEFT", 10, -8)
+    card.title:SetWidth(260)
+    card.title:SetJustifyH("LEFT")
+
+    card.abandonBtn = CreateFrame("Button", "PBQuestCard" .. index .. "Abandon", card, "UIPanelButtonTemplate")
+    card.abandonBtn:SetWidth(64)
+    card.abandonBtn:SetHeight(20)
+    card.abandonBtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -6)
+    card.abandonBtn:SetText("Abandon")
+
+    card.turnInBtn = CreateFrame("Button", "PBQuestCard" .. index .. "TurnIn", card, "UIPanelButtonTemplate")
+    card.turnInBtn:SetWidth(64)
+    card.turnInBtn:SetHeight(20)
+    card.turnInBtn:SetPoint("RIGHT", card.abandonBtn, "LEFT", -4, 0)
+    card.turnInBtn:SetText("Turn In")
+
+    card.objectives = card:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    card.objectives:SetPoint("TOPLEFT", card.title, "BOTTOMLEFT", 6, -5)
+    card.objectives:SetWidth(PB_QUEST_CARD_WIDTH - 30)
+    card.objectives:SetJustifyH("LEFT")
+    card.objectives:SetJustifyV("TOP")
+
+    card.rewardLabel = card:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    card.rewardLabel:SetJustifyH("LEFT")
+    card.rewardLabel:SetWidth(PB_QUEST_CARD_WIDTH - 30)
+
+    card.rewardButtons = {}
+    for i = 1, 6 do
+        local button = CreateFrame("Button", "PBQuestCard" .. index .. "Reward" .. i, card)
+        button:SetWidth(PB_QUEST_REWARD_SIZE)
+        button:SetHeight(PB_QUEST_REWARD_SIZE)
+        button.icon = button:CreateTexture(nil, "ARTWORK")
+        button.icon:SetAllPoints(button)
+        button.border = button:CreateTexture(nil, "OVERLAY")
+        button.border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+        button.border:SetBlendMode("ADD")
+        button.border:SetWidth(PB_QUEST_REWARD_SIZE * 1.9)
+        button.border:SetHeight(PB_QUEST_REWARD_SIZE * 1.9)
+        button.border:SetPoint("CENTER", button, "CENTER", 0, 0)
+        button.border:SetVertexColor(1, 0.82, 0)
+        button.border:Hide()
+        button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+        button:SetScript("OnEnter", function()
+            local reward = this.reward
+            if not reward then return end
+            GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+            if GetItemInfo(reward.itemId) then
+                GameTooltip:SetHyperlink("item:" .. reward.itemId .. ":0:0:0")
+            else
+                GameTooltip:SetText("|cff" .. (PB_QUALITY_COLORS[reward.quality] or "ffffff") .. reward.name .. "|r")
+            end
+            GameTooltip:AddLine("Click to choose this reward for " .. (this.botName or "the bot") .. ".", 0.6, 0.8, 1)
+            GameTooltip:Show()
+        end)
+        button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        button:SetScript("OnClick", function()
+            if this.quest and this.reward and this.botName then
+                PartyBotUI_SetReward(this.botName, this.quest, this.reward.number)
+            end
+        end)
+        card.rewardButtons[i] = button
+    end
+
+    card.autoBtn = CreateFrame("Button", "PBQuestCard" .. index .. "Auto", card, "UIPanelButtonTemplate")
+    card.autoBtn:SetWidth(48)
+    card.autoBtn:SetHeight(20)
+    card.autoBtn:SetText("Auto")
+    card.autoBtn:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Let the bot pick: gear it can use first,\nthen quality, item level and vendor value.")
+        GameTooltip:Show()
+    end)
+    card.autoBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    return card
+end
+
+local function PartyBotUI_FillQuestCard(card, botName, quest)
+    local complete = quest.status == "complete"
+    local statusText = complete and "|cff20ff20Ready|r" or (quest.status == "failed" and "|cffff4040Failed|r" or "")
+    card.title:SetText(string.format("|cffffd200[%d]|r %s  %s", quest.level or 0, quest.title, statusText))
+
+    -- Objectives
+    local lines = {}
+    for _, objective in ipairs(quest.objectives) do
+        local done = objective.have >= objective.need
+        local color = done and "|cff20ff20" or "|cffffffff"
+        table.insert(lines, string.format("%s- %s: %d/%d|r", color, objective.name, math.min(objective.have, objective.need), objective.need))
+    end
+    if table.getn(lines) == 0 then
+        table.insert(lines, complete and "|cff20ff20- Ready to turn in|r" or "|cffaaaaaa- Talk to the quest giver|r")
+    end
+    card.objectives:SetText(table.concat(lines, "\n"))
+    local objectivesHeight = table.getn(lines) * 13
+    card.objectives:SetHeight(objectivesHeight)
+
+    local height = 8 + 16 + 5 + objectivesHeight + 8
+
+    -- Reward choices
+    local rewardCount = table.getn(quest.rewards)
+    if rewardCount > 0 then
+        card.rewardLabel:ClearAllPoints()
+        card.rewardLabel:SetPoint("TOPLEFT", card.objectives, "BOTTOMLEFT", 0, -6)
+        local selectedText = "|cffff8040choose one|r"
+        if quest.selected == "auto" then
+            selectedText = "|cff9fd0ffAuto|r"
+        else
+            for _, reward in ipairs(quest.rewards) do
+                if reward.number == quest.selected then
+                    selectedText = "|cff" .. (PB_QUALITY_COLORS[reward.quality] or "ffffff") .. reward.name .. "|r"
+                end
+            end
+        end
+        card.rewardLabel:SetText("Reward: " .. selectedText)
+        card.rewardLabel:Show()
+
+        for i = 1, 6 do
+            local button = card.rewardButtons[i]
+            local reward = quest.rewards[i]
+            if reward then
+                local _, _, _, _, _, _, _, _, texture = GetItemInfo(reward.itemId)
+                button.icon:SetTexture(texture or "Interface\\Icons\\INV_Misc_QuestionMark")
+                button.reward = reward
+                button.quest = quest
+                button.botName = botName
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", card.rewardLabel, "BOTTOMLEFT", (i - 1) * (PB_QUEST_REWARD_SIZE + 6), -4)
+                if quest.selected == reward.number then button.border:Show() else button.border:Hide() end
+                button:Show()
+            else
+                button:Hide()
+            end
+        end
+
+        card.autoBtn:ClearAllPoints()
+        card.autoBtn:SetPoint("TOPLEFT", card.rewardLabel, "BOTTOMLEFT",
+            rewardCount * (PB_QUEST_REWARD_SIZE + 6) + 6, -8)
+        if quest.selected == "auto" then card.autoBtn:LockHighlight() else card.autoBtn:UnlockHighlight() end
+        card.autoBtn:SetScript("OnClick", function() PartyBotUI_SetReward(botName, quest, "auto") end)
+        card.autoBtn:Show()
+
+        height = height + 6 + 14 + 4 + PB_QUEST_REWARD_SIZE + 4
+    else
+        card.rewardLabel:Hide()
+        card.autoBtn:Hide()
+        for i = 1, 6 do card.rewardButtons[i]:Hide() end
+    end
+
+    if complete then card.turnInBtn:Enable() else card.turnInBtn:Disable() end
+    card.turnInBtn:SetScript("OnClick", function()
+        if table.getn(quest.rewards) > 0 and not quest.selected then
+            PartyBotUI_Print("Choose a reward for " .. quest.title .. " first.")
+            return
+        end
+        PartyBotUI_TurnIn(botName, quest.id)
+    end)
+    card.abandonBtn:SetScript("OnClick", function()
+        PartyBotUI_PendingAbandon = { bot = botName, questId = quest.id }
+        StaticPopup_Show("PARTYBOTUI_ABANDON_QUEST", botName, quest.title)
+    end)
+
+    card:SetHeight(height)
+    return height
+end
+
+function PartyBotUI_RenderQuests()
+    local frame = PartyBotQuestsTabFrame
+
+    if not frame.initialized then
+        frame.initialized = true
+
+        frame.botSubTabs = {}
+        for i = 1, 4 do
+            local tab = CreateFrame("Button", "PBQuestSubTab" .. i, frame, "UIPanelButtonTemplate")
+            tab:SetWidth(110)
+            tab:SetHeight(24)
+            tab:SetPoint("TOPLEFT", frame, "TOPLEFT", 24 + (i - 1) * 122, -66)
+            tab.botIndex = i
+            tab:SetScript("OnClick", function()
+                PartyBotUI_SelectedBot = this.botIndex
+                local bot = PartyBotUI_ActiveBots[this.botIndex]
+                if bot then PartyBotUI_RequestQuests(bot.name) end
+                PartyBotUI_RenderQuests()
+            end)
+            frame.botSubTabs[i] = tab
+        end
+
+        frame.hint = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        frame.hint:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -100)
+        frame.hint:SetWidth(250)
+        frame.hint:SetJustifyH("LEFT")
+        frame.hint:SetText("Pick rewards, target the quest giver, then Turn In.")
+
+        frame.lootCheck = CreateFrame("CheckButton", "PBQuestLootCheck", frame, "UICheckButtonTemplate")
+        frame.lootCheck:SetWidth(24)
+        frame.lootCheck:SetHeight(24)
+        frame.lootCheck:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -220, -94)
+        getglobal("PBQuestLootCheckText"):SetText("Loot quest items")
+        frame.lootCheck:SetScript("OnClick", function()
+            local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+            if bot then
+                local enable = this:GetChecked() and true or false
+                PartyBotUI_BotQuestLoot[bot.name] = enable
+                PartyBotUI_Command("questloot " .. bot.name .. (enable and " on" or " off"))
+            end
+        end)
+        frame.lootCheck:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+            GameTooltip:SetText("The bot picks up its own quest items from nearby kills.\nShared drops are left for you until you have enough.")
+            GameTooltip:Show()
+        end)
+        frame.lootCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+        frame.refreshBtn = CreateFrame("Button", "PBQuestRefreshBtn", frame, "UIPanelButtonTemplate")
+        frame.refreshBtn:SetWidth(70)
+        frame.refreshBtn:SetHeight(22)
+        frame.refreshBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -26, -96)
+        frame.refreshBtn:SetText("Refresh")
+        frame.refreshBtn:SetScript("OnClick", function()
+            local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+            if bot then PartyBotUI_RequestQuests(bot.name, true) end
+        end)
+
+        local panel = CreateFrame("Frame", nil, frame)
+        panel:SetPoint("TOPLEFT", frame, "TOPLEFT", 22, -124)
+        panel:SetWidth(484)
+        panel:SetHeight(360)
+        frame.panel = panel
+
+        local scroll = CreateFrame("ScrollFrame", "PartyBotQuestsScrollFrame", panel, "UIPanelScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
+        scroll:SetWidth(452)
+        scroll:SetHeight(360)
+        local content = CreateFrame("Frame", "PartyBotQuestsScrollChild", scroll)
+        content:SetWidth(PB_QUEST_CARD_WIDTH + 8)
+        content:SetHeight(360)
+        scroll:SetScrollChild(content)
+        frame.scroll = scroll
+        frame.content = content
+        frame.cards = {}
+
+        frame.emptyText = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        frame.emptyText:SetPoint("TOP", content, "TOP", 0, -40)
+        frame.emptyText:SetWidth(PB_QUEST_CARD_WIDTH)
+
+        frame.turnInBotBtn = CreateFrame("Button", "PBQuestTurnInBotBtn", frame, "UIPanelButtonTemplate")
+        frame.turnInBotBtn:SetWidth(150)
+        frame.turnInBotBtn:SetHeight(24)
+        frame.turnInBotBtn:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 25, 18)
+        frame.turnInBotBtn:SetText("Turn In: This Bot")
+        frame.turnInBotBtn:SetScript("OnClick", function()
+            local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+            if bot then PartyBotUI_TurnIn(bot.name) end
+        end)
+
+        frame.turnInAllBtn = CreateFrame("Button", "PBQuestTurnInAllBtn", frame, "UIPanelButtonTemplate")
+        frame.turnInAllBtn:SetWidth(150)
+        frame.turnInAllBtn:SetHeight(24)
+        frame.turnInAllBtn:SetPoint("LEFT", frame.turnInBotBtn, "RIGHT", 8, 0)
+        frame.turnInAllBtn:SetText("Turn In: All Bots")
+        frame.turnInAllBtn:SetScript("OnClick", function() PartyBotUI_TurnIn(nil) end)
+
+        frame.shareHint = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+        frame.shareHint:SetPoint("LEFT", frame.turnInAllBtn, "RIGHT", 10, 0)
+        frame.shareHint:SetWidth(150)
+        frame.shareHint:SetJustifyH("LEFT")
+        frame.shareHint:SetText("Share quests from your quest log to give them to bots.")
+    end
+
+    for i = 1, 4 do
+        local tab = frame.botSubTabs[i]
+        local bot = PartyBotUI_ActiveBots[i]
+        if bot then
+            tab:Show()
+            tab:SetText(bot.name)
+            if i == PartyBotUI_SelectedBot then tab:LockHighlight() else tab:UnlockHighlight() end
+        else
+            tab:Hide()
+        end
+    end
+
+    for _, card in ipairs(frame.cards) do card:Hide() end
+
+    local bot = PartyBotUI_ActiveBots[PartyBotUI_SelectedBot]
+    if not bot then
+        frame.lootCheck:Hide()
+        frame.emptyText:SetText("No partybot in this slot. Summon one from the Roster tab.")
+        frame.emptyText:Show()
+        frame.content:SetHeight(360)
+        return
+    end
+
+    frame.lootCheck:Show()
+    frame.lootCheck:SetChecked(PartyBotUI_BotQuestLoot[bot.name] ~= false)
+
+    local data = PartyBotUI_BotQuests[bot.name]
+    if not data or not data.fetchedAt then
+        frame.emptyText:SetText("Loading " .. bot.name .. "'s quest log...")
+        frame.emptyText:Show()
+        frame.content:SetHeight(360)
+        return
+    end
+
+    if table.getn(data.list) == 0 then
+        frame.emptyText:SetText(bot.name .. " has no quests.\nShare one from your quest log to give it to your bots.")
+        frame.emptyText:Show()
+        frame.content:SetHeight(360)
+        return
+    end
+    frame.emptyText:Hide()
+
+    -- Ready quests first, then by level.
+    local quests = {}
+    for _, quest in ipairs(data.list) do table.insert(quests, quest) end
+    table.sort(quests, function(a, b)
+        local aReady = a.status == "complete"
+        local bReady = b.status == "complete"
+        if aReady ~= bReady then return aReady end
+        return (a.level or 0) < (b.level or 0)
+    end)
+
+    local y = 0
+    for i, quest in ipairs(quests) do
+        local card = frame.cards[i]
+        if not card then
+            card = PartyBotUI_CreateQuestCard(frame.content, i)
+            frame.cards[i] = card
+        end
+        card:ClearAllPoints()
+        card:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -y)
+        y = y + PartyBotUI_FillQuestCard(card, bot.name, quest) + 6
+        card:Show()
+    end
+
+    frame.content:SetHeight(math.max(y, 360))
+    frame.scroll:UpdateScrollChildRect()
+end
+
+-- ============================================================================
 -- Event Listener & Initialization
 -- ============================================================================
 
@@ -1811,6 +2447,12 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
         PartyBotUI_Command("cometome")
     elseif msg == "aoe" then
         PartyBotUI_ToggleAOE()
+    elseif msg == "quests" or msg == "q" then
+        PartyBotMainFrame:Show()
+        PartyBotUI_UpdateRoster()
+        PartyBotUI_SelectTab(5)
+    elseif msg == "turnin" then
+        PartyBotUI_TurnIn(nil)
     elseif msg == "bags" then
         local name = UnitName("target")
         if name then
@@ -1827,6 +2469,6 @@ SlashCmdList["PARTYBOTUI"] = function(msg)
             PartyBotUI_Command("money " .. (mArgs or ""))
         end
     else
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[PartyBot]|r Unknown command. Use /pb, /pb dock, /pb pull, /pb atk, /pb stop, /pb follow, /pb aoe, /pb bags, or /pb money.")
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[PartyBot]|r Unknown command. Use /pb, /pb dock, /pb pull, /pb atk, /pb stop, /pb follow, /pb aoe, /pb bags, /pb money, /pb quests, or /pb turnin.")
     end
 end

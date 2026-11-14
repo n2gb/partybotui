@@ -125,7 +125,7 @@
     <!-- Template for Top Menu Navigation Buttons -->
     <Button name="PartyBotNavButtonTemplate" virtual="true">
         <Size>
-            <AbsDimension x="118" y="24"/>
+            <AbsDimension x="94" y="24"/>
         </Size>
         <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
             <EdgeSize>
@@ -142,7 +142,7 @@
             <Layer level="OVERLAY">
                 <Texture name="$parentActiveIndicator" hidden="true">
                     <Size>
-                        <AbsDimension x="110" y="2"/>
+                        <AbsDimension x="86" y="2"/>
                     </Size>
                     <Anchors>
                         <Anchor point="BOTTOM">
@@ -186,7 +186,7 @@
     <!-- Two-row tactical dock. Buttons and mark picker are created by Lua. -->
     <Frame name="PartyBotDockFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true">
         <Size>
-            <AbsDimension x="660" y="78"/>
+            <AbsDimension x="720" y="78"/>
         </Size>
         <Anchors>
             <Anchor point="TOP" relativeTo="UIParent" relativePoint="TOP">
@@ -297,7 +297,7 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="PartyBotMainFrameTab2" inherits="PartyBotNavButtonTemplate" text="Character Sheet" id="2">
+            <Button name="PartyBotMainFrameTab2" inherits="PartyBotNavButtonTemplate" text="Character" id="2">
                 <Anchors>
                     <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab1" relativePoint="RIGHT">
                         <Offset>
@@ -336,6 +336,20 @@
                 <Scripts>
                     <OnClick>
                         PartyBotUI_SelectTab(4, true);
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="PartyBotMainFrameTab5" inherits="PartyBotNavButtonTemplate" text="Quests" id="5">
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="PartyBotMainFrameTab4" relativePoint="RIGHT">
+                        <Offset>
+                            <AbsDimension x="3" y="0"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        PartyBotUI_SelectTab(5);
                     </OnClick>
                 </Scripts>
             </Button>
@@ -428,6 +442,11 @@
             <!-- TAB 4: ACCOUNT-WIDE NOTES -->
             <Frame name="PartyBotNotesTabFrame" setAllPoints="true" hidden="true">
                 <!-- Scrolling notepad created by Lua on first visit -->
+            </Frame>
+
+            <!-- TAB 5: BOT QUEST LOGS, REWARD CHOICES AND TURN-IN -->
+            <Frame name="PartyBotQuestsTabFrame" setAllPoints="true" hidden="true">
+                <!-- Quest cards created by Lua on first visit -->
             </Frame>
         </Frames>
         <Scripts>
